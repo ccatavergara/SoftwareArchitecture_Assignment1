@@ -8,8 +8,7 @@
 </head>
 <body>
     <h1>Authors</h1>
-    <ul id="authors-list">
-    </ul>
+    <ul id="authors-list"></ul>
     <button onclick="window.location.href='/'">Back to Home</button>
     <button onclick="showAddAuthorForm()">Add Author</button>
 
@@ -32,20 +31,68 @@
         </form>
     </div>
 
+    <div id="edit-author-form" style="display: none;">
+        <h2>Edit Author</h2>
+        <form id="edit-author-form">
+            <input type="hidden" id="edit-author-id" name="id">
+            <label for="edit-name">Name:</label>
+            <input type="text" id="edit-name" name="name" required>
+            <br>
+            <label for="edit-date_of_birth">Date of Birth:</label>
+            <input type="date" id="edit-date_of_birth" name="date_of_birth">
+            <br>
+            <label for="edit-country_of_origin">Country of Origin:</label>
+            <input type="text" id="edit-country_of_origin" name="country_of_origin" required>
+            <br>
+            <label for="edit-short_description">Short Description:</label>
+            <textarea id="edit-short_description" name="short_description" required></textarea>
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
     <script>
         async function fetchAuthors() {
-            const response = await fetch('/api/authors');
-            const authors = await response.json();
-            const authorsList = document.getElementById('authors-list');
-            authors.forEach(author => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${author.name} (${author.date_of_birth} - ${author.country_of_origin})`;
-                authorsList.appendChild(listItem);
-            });
+            try {
+                const response = await fetch('/api/authors');
+                const authors = await response.json();
+                const authorsList = document.getElementById('authors-list');
+                authorsList.innerHTML = '';
+                authors.forEach(author => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        ${author.name} (${author.date_of_birth} - ${author.country_of_origin})
+                        <button onclick="editAuthor('${author.id}')">Edit</button>
+                    `;
+                    authorsList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Error fetching authors:', error);
+            }
         }
 
         function showAddAuthorForm() {
             document.getElementById('add-author-form').style.display = 'block';
+        }
+
+        function showEditAuthorForm(author) {
+            document.getElementById('edit-author-form').style.display = 'block';
+            document.getElementById('edit-author-id').value = author.id;
+            document.getElementById('edit-name').value = author.name;
+            document.getElementById('edit-date_of_birth').value = author.date_of_birth;
+            document.getElementById('edit-country_of_origin').value = author.country_of_origin;
+            document.getElementById('edit-short_description').value = author.short_description;
+        }
+
+        async function editAuthor(authorId) {
+            try {
+                const response = await fetch(`/api/authors/${authorId}`);
+                const author = await response.json();
+                console.log("RESPONSE:", response);
+                showEditAuthorForm(author);
+            } catch (error) {
+                console.error('Error fetching author for edit:', error);
+            }
         }
 
         document.getElementById('author-form').addEventListener('submit', async (event) => {
@@ -53,17 +100,49 @@
             const formData = new FormData(event.target);
             const data = Object.fromEntries(formData.entries());
 
-            const response = await fetch('/api/authors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch('/api/authors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
 
-            if (response.ok) {
-                alert('Author added successfully!');
-                window.location.reload();
-            } else {
+                if (response.ok) {
+                    alert('Author added successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error adding author: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding author:', error);
                 alert('Error adding author');
+            }
+        });
+
+        document.getElementById('edit-author-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            console.log("DATA:", data);
+
+            try {
+                const response = await fetch(`/api/authors/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Author updated successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error updating author: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error updating author:', error);
+                alert('Error updating author');
             }
         });
 

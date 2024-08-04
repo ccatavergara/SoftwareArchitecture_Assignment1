@@ -1,14 +1,35 @@
-const executeCqlCommand = require('../executeCqlCommand');
-const { v4: uuidv4 } = require('uuid');
+const express = require('express');
+const router = express.Router();
+const client = require('../db');
+const { v4: uuid } = require('uuid');
 
-const createReview = async (book, review, score, numberOfUpvotes) => {
-  const query = 'INSERT INTO reviews (id, book, review, score, number_of_upvotes) VALUES (?, ?, ?, ?, ?)';
-  await executeCqlCommand(query, [uuidv4(), book, review, score, numberOfUpvotes]);
-};
+// GET REVIEWS
+router.get('/reviews', async (req, res) => {
+  try {
+    const result = await client.execute('SELECT * FROM reviews');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching reviews' });
+  }
+});
 
-// Define other CRUD functions as needed
+// CREATE REVIEW
+router.post('/reviews', async (req, res) => {
+  const { book, review, score } = req.body;
 
-module.exports = {
-  createReview,
-  // other CRUD functions
-};
+  console.log(book, review, score)
+
+  try {
+    await client.execute(
+      'INSERT INTO reviews (id, book, review, score, number_of_upvotes) VALUES (?, ?, ?, ?, ?)',
+      [uuid(), book, review, parseInt(score, 10), 0],
+      { prepare: true }
+    );
+    res.status(201).json({ message: 'Review added successfully' });
+  } catch (error) {
+    console.error('Error adding review:', error);
+    res.status(500).json({ error: `Error adding review: ${error.message}` });
+  }
+});
+
+module.exports = router;
