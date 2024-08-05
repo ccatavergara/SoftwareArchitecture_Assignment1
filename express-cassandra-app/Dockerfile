@@ -7,8 +7,14 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json files to the container
 COPY package*.json ./
 
+# COPY init_keyspace.cql /docker-entrypoint-initdb.d/
+# COPY init_keyspace.sh /docker-entrypoint-initdb.d/
+
 # Install dependencies
 RUN npm install
+# RUN chmod +x /docker-entrypoint-initdb.d/init_keyspace.sh
+
+# ENTRYPOINT ["/docker-entrypoint-initdb.d/init_keyspace.sh"]
 
 # Copy the rest of the application code to the container
 COPY . .

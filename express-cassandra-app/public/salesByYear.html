@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales By Year</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Sales By Year</h1>
+    <ul id="sales-list"></ul>
+    <button onclick="window.location.href='/'">Back to Home</button>
+    <button onclick="showAddSaleForm()">Add Sale</button>
+
+    <div id="add-sale-form" style="display: none;">
+        <h2>Add New Sale</h2>
+        <form id="sale-form">
+            <label for="year">Year:</label>
+            <input type="number" id="year" name="year" required>
+            <br>
+            <label for="sales">Total Sales:</label>
+            <input type="number" id="sales" name="sales" required>
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <div id="edit-sale-form" style="display: none;">
+        <h2>Edit Sale</h2>
+        <form id="edit-sale-form-content">
+            <input type="hidden" id="edit-sale-id" name="id">
+            <label for="edit-year">Year:</label>
+            <input type="number" id="edit-year" name="year" required>
+            <br>
+            <label for="edit-sales">Total Sales:</label>
+            <input type="number" id="edit-sales" name="sales" required>
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <script>
+        async function fetchSales() {
+            try {
+                const response = await fetch('/api/salesByYear');
+                const sales = await response.json();
+                const salesList = document.getElementById('sales-list');
+                salesList.innerHTML = '';
+                sales.forEach(sale => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        Year: ${sale.year} - Total Sales: ${sale.sales}
+                        <button onclick="editSale('${sale.id}')">Edit</button>
+                        <button onclick="deleteSale('${sale.id}')">Delete</button>
+                    `;
+                    salesList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Error fetching sales:', error);
+            }
+        }
+
+        function showAddSaleForm() {
+            document.getElementById('add-sale-form').style.display = 'block';
+        }
+
+        function showEditSaleForm(sale) {
+            document.getElementById('edit-sale-form').style.display = 'block';
+            document.getElementById('edit-sale-id').value = sale.id;
+            document.getElementById('edit-year').value = sale.year;
+            document.getElementById('edit-sales').value = sale.sales;
+        }
+
+        async function editSale(saleId) {
+            try {
+                const response = await fetch(`/api/salesByYear/${saleId}`);
+                const sale = await response.json();
+                showEditSaleForm(sale);
+            } catch (error) {
+                console.error('Error fetching sale for edit:', error);
+            }
+        }
+
+        async function deleteSale(saleId) {
+            try {
+                const response = await fetch(`/api/salesByYear/${saleId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    alert('Sale deleted successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error deleting sale: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error deleting sale:', error);
+                alert('Error deleting sale');
+            }
+        }
+
+        document.getElementById('sale-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/salesByYear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Sale added successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error adding sale: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding sale:', error);
+                alert('Error adding sale');
+            }
+        });
+
+        document.getElementById('edit-sale-form-content').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(`/api/salesByYear/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Sale updated successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error updating sale: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error updating sale:', error);
+                alert('Error updating sale');
+            }
+        });
+
+        fetchSales();
+    </script>
+</body>
+</html>

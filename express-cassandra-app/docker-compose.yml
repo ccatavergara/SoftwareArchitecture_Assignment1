@@ -12,6 +12,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    # volumes:
+    #   - ./init_keyspace.cql:/docker-entrypoint-initdb.d/init_keyspace.cql
+      # - ./init_keyspace.sh:/docker-entrypoint-initdb.d/init_keyspace.sh
 
   web:
     build: .

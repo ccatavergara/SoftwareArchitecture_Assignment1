@@ -1,3 +1,53 @@
+document.addEventListener('DOMContentLoaded', () => {
+    fetchBooks();
+
+    document.getElementById('book-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        if (data.date_of_publication) {
+            data.date_of_publication = new Date(data.date_of_publication).toISOString().split('T')[0];
+        }
+
+        const response = await fetch('/api/books', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Book added successfully!');
+            window.location.reload();
+        } else {
+            alert('Error adding book');
+        }
+    });
+
+    document.getElementById('edit-book-form-content').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        if (data.date_of_publication) {
+            data.date_of_publication = new Date(data.date_of_publication).toISOString().split('T')[0];
+        }
+
+        const response = await fetch(`/api/books/${data.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Book updated successfully!');
+            window.location.reload();
+        } else {
+            alert('Error updating book');
+        }
+    });
+});
+
 async function fetchBooks() {
     try {
         const response = await fetch('/api/books');
@@ -7,7 +57,7 @@ async function fetchBooks() {
         books.forEach(book => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
-                ${book.name}: ${book.summary} \n(${book.date_of_publication}) - Sales: ${book.number_of_sales}
+                ${book.name}: ${book.summary} <br>(${book.date_of_publication}) - Sales: ${book.number_of_sales}
                 <button onclick="editBook('${book.id}')">Edit</button>
                 <button onclick="deleteBook('${book.id}')">Delete</button>
             `;
@@ -58,46 +108,3 @@ async function deleteBook(bookId) {
         alert('Error deleting book');
     }
 }
-
-document.getElementById('book-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    const response = await fetch('/api/books', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    if (response.ok) {
-        alert('Book added successfully!');
-        window.location.reload();
-    } else {
-        alert('Error adding book');
-    }
-});
-
-document.getElementById('edit-book-form-content').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    const response = await fetch(`/api/books/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    console.log("RESPONSE:", response);
-    console.log("DATAAAA:", data);
-
-    if (response.ok) {
-        alert('Book updated successfully!');
-        window.location.reload();
-    } else {
-        alert('Error updating book');
-    }
-});
-
-fetchBooks();
