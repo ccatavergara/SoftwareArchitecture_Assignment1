@@ -15,6 +15,7 @@ router.get('/books', async (req, res) => {
 });
 
 // CREATE BOOK
+//TODO fix this to add the author uuid
 router.post('/books', async (req, res) => {
   const { name, summary, date_of_publication, number_of_sales } = req.body;
 
