@@ -8,8 +8,7 @@
 </head>
 <body>
     <h1>Books</h1>
-    <ul id="books-list">
-    </ul>
+    <ul id="books-list"></ul>
     <button onclick="window.location.href='/'">Back to Home</button>
     <button onclick="showAddBookForm()">Add Book</button>
 
@@ -31,8 +30,78 @@
             <button type="submit">Submit</button>
         </form>
     </div>
-    
+
+    <div id="edit-book-form" style="display: none;">
+        <h2>Edit Book</h2>
+        <form id="edit-book-form-content">
+            <input type="hidden" id="edit-book-id" name="id">
+            <label for="edit-name">Name:</label>
+            <input type="text" id="edit-name" name="name" required>
+            <br>
+            <label for="edit-summary">Summary:</label>
+            <textarea id="edit-summary" name="summary" required></textarea>
+            <br>
+            <label for="edit-date_of_publication">Date of Publication:</label>
+            <input type="date" id="edit-date_of_publication" name="date_of_publication">
+            <br>
+            <label for="edit-number_of_sales">Number of Sales:</label>
+            <input type="number" id="edit-number_of_sales" name="number_of_sales">
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchBooks();
+
+            document.getElementById('book-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData.entries());
+
+                if (data.date_of_publication) {
+                    data.date_of_publication = new Date(data.date_of_publication).toISOString().split('T')[0];
+                }
+
+                const response = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Book added successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error adding book');
+                }
+            });
+
+            document.getElementById('edit-book-form-content').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData.entries());
+
+                if (data.date_of_publication) {
+                    data.date_of_publication = new Date(data.date_of_publication).toISOString().split('T')[0];
+                }
+
+                const response = await fetch(`/api/books/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Book updated successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error updating book');
+                }
+            });
+        });
+
         async function fetchBooks() {
             try {
                 const response = await fetch('/api/books');
@@ -42,7 +111,9 @@
                 books.forEach(book => {
                     const listItem = document.createElement('li');
                     listItem.innerHTML = `
-                        ${book.name}: ${book.summary} \n(${book.date_of_publication}) - Sales: ${book.number_of_sales}
+                        ${book.name}: ${book.summary} <br>(${book.date_of_publication}) - Sales: ${book.number_of_sales}
+                        <button onclick="editBook('${book.id}')">Edit</button>
+                        <button onclick="deleteBook('${book.id}')">Delete</button>
                     `;
                     booksList.appendChild(listItem);
                 });
@@ -55,26 +126,42 @@
             document.getElementById('add-book-form').style.display = 'block';
         }
 
-        document.getElementById('book-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
+        function showEditBookForm(book) {
+            document.getElementById('edit-book-form').style.display = 'block';
+            document.getElementById('edit-book-id').value = book.id;
+            document.getElementById('edit-name').value = book.name;
+            document.getElementById('edit-summary').value = book.summary;
+            document.getElementById('edit-date_of_publication').value = book.date_of_publication;
+            document.getElementById('edit-number_of_sales').value = book.number_of_sales;
+        }
 
-            const response = await fetch('/api/books', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                alert('Book added successfully!');
-                window.location.reload();
-            } else {
-                alert('Error adding book');
+        async function editBook(bookId) {
+            try {
+                const response = await fetch(`/api/books/${bookId}`);
+                const book = await response.json();
+                showEditBookForm(book);
+            } catch (error) {
+                console.error('Error fetching book for edit:', error);
             }
-        });
+        }
 
-        fetchBooks();
+        async function deleteBook(bookId) {
+            try {
+                const response = await fetch(`/api/books/${bookId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    alert('Book deleted successfully!');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error deleting book: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error deleting book:', error);
+                alert('Error deleting book');
+            }
+        }
     </script>
 </body>
 </html>

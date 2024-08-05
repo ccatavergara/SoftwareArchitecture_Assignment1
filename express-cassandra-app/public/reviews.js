@@ -2,15 +2,7 @@ async function fetchReviews() {
     try {
         const response = await fetch('/api/reviews');
         const reviews = await response.json();
-        const reviewsList = document.getElementById('reviews-list');
-        reviewsList.innerHTML = '';
-        reviews.forEach(review => {
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                Book ID: ${review.book} - Review: ${review.review} - Score: ${review.score} - Upvotes: ${review.number_of_upvotes}
-            `;
-            reviewsList.appendChild(listItem);
-        });
+        return reviews;
     } catch (error) {
         console.error('Error fetching reviews:', error);
     }
@@ -20,13 +12,7 @@ async function fetchBooks() {
     try {
         const response = await fetch('/api/books');
         const books = await response.json();
-        const bookSelect = document.getElementById('book');
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.id;
-            option.text = book.name;
-            bookSelect.appendChild(option);
-        });
+        return books;
     } catch (error) {
         console.error('Error fetching books:', error);
     }
@@ -55,5 +41,40 @@ document.getElementById('review-form').addEventListener('submit', async (event) 
     }
 });
 
-fetchReviews();
-fetchBooks();
+async function displayReviews() {
+    const reviews = await fetchReviews();
+    const books = await fetchBooks();
+
+    const bookMap = new Map();
+    books.forEach(book => {
+        bookMap.set(book.id, book.name);
+    });
+
+    const reviewsList = document.getElementById('reviews-list');
+    reviewsList.innerHTML = '';
+
+    reviews.forEach(review => {
+        const bookName = bookMap.get(review.book);
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `
+            Book: ${bookName} - Review: ${review.review} - Score: ${review.score} - Upvotes: ${review.number_of_upvotes}
+        `;
+        reviewsList.appendChild(listItem);
+    });
+}
+
+async function populateBookDropdown() {
+    const books = await fetchBooks();
+    const bookSelect = document.getElementById('book');
+    books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.text = book.name;
+        bookSelect.appendChild(option);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    displayReviews();
+    populateBookDropdown();
+});
