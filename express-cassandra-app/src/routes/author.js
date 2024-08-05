@@ -38,7 +38,7 @@ router.put('/authors/:id', async (req, res) => {
   const { id } = req.params;
   const { name, date_of_birth, country_of_origin, short_description } = req.body;
 
-  const birthdate = new Date(date_of_birth).toISOString().split('T')[0]; // Format YYYY-MM-DD
+  const birthdate = new Date(date_of_birth).toISOString().split('T')[0];
 
   try {
     await client.execute(
