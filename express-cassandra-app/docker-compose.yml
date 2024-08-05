@@ -12,8 +12,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
-
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /docker-entrypoint.sh cassandra -f &
+        sleep 30
+        cqlsh -e "CREATE KEYSPACE IF NOT EXISTS book_app WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
+        wait
   web:
     build: .
     container_name: express-cassandra-app-web
