@@ -14,6 +14,7 @@ const createTables = async () => {
   const createBooksTable = `
     CREATE TABLE IF NOT EXISTS books (
       id UUID PRIMARY KEY,
+      author, UUID,
       name TEXT,
       summary TEXT,
       date_of_publication DATE,

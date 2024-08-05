@@ -13,5 +13,8 @@
     "cassandra-driver": "^4.7.2",
     "express": "^4.19.2",
     "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1"
   }
 }
