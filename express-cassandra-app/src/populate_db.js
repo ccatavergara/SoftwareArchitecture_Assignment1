@@ -1,22 +1,26 @@
-const { faker } = require('@faker-js/faker');
+const { faker, de } = require('@faker-js/faker');
 
 
-const cassandra = require('cassandra-driver');
+const createTables = require('./createTables');
+const client = require('./db');
 
-const client = new cassandra.Client({ 
-  contactPoints: ['cassandra'],
-  localDataCenter: 'datacenter1',
-  keyspace: 'book_app'
-});
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-client.connect()
-  .then(() => {
-    console.log('Connected to Cassandra');
-  })
-  .catch(err => {
-    console.error('Failed to connect to Cassandra', err);
-  });
-
+async function initialize() {
+    console.log('Creating tables...');
+    await createTables();
+    console.log('Tables created successfully');
+    
+    console.log('Waiting for 5 seconds...');
+    await delay(5000);  // 5000 milliseconds = 5 seconds
+    
+    console.log('Continuing with database population...');
+    await populateDb().then(() => {
+        console.log('Database population completed successfully');
+    });
+    await delay(9000);
+    process.exit(0);
+}
 
 const executeCqlCommand = async (query, params = []) => {
 try {
@@ -36,7 +40,7 @@ const createAuthor = async (id,name, dateOfBirth, countryOfOrigin, shortDescript
 
 const createBook = async (id, authorId, name, summary, dateOfPublication, numberOfSales) => {
     const query = 'INSERT INTO books (id, author, name, summary, date_of_publication, number_of_sales) VALUES (?, ?, ?, ?, ?, ?)';
-    await executeCqlCommand(query, [uuidv4(), name, summary, dateOfPublication, numberOfSales]);
+    await executeCqlCommand(query, [id, authorId, name, summary, dateOfPublication, numberOfSales]);
   };
 
 
@@ -46,8 +50,8 @@ const createReview =  async (id,bookId, review, score, numberOfUpvotes) => {
     };
 
 const createSalesByYear  = async (id,bookId,year,sales) => {
-    const query = 'INSERT INTO sales_by_year (id, book, year, sales) VALUES (?, ?, ?, ?)';
-    await executeCqlCommand(query, [id, bookId, year, sales]);
+    const query = 'INSERT INTO sales_by_year (id, book, sales, year) VALUES (?, ?, ?, ?)';
+    await executeCqlCommand(query, [id, bookId, sales, year]);
 }
 
 function createRandomAuthor() {
@@ -67,7 +71,7 @@ function createRandomBook(authorId) {
         authorId: authorId,
         name: faker.commerce.productName(),
         summary: faker.lorem.paragraph(),
-        dateOfPublication: faker.date.past({ refDate: new Date('2017-01-01') }).getFullYear(),
+        dateOfPublication: faker.date.past({ refDate: new Date('2017-01-01') }),
         numberOfSales: faker.number.int(300000),
     }
 }
@@ -95,7 +99,7 @@ const createRandomSalesByYear = (bookId,year) => {
 
 
 const AUTHORS = faker.helpers.multiple(createRandomAuthor, {
-    count:2,
+    count:50,
 });
 
 
@@ -123,40 +127,43 @@ const SALES_BY_YEAR = BOOKS.flatMap((book) => {
 
 const populateDb = async () => {
     console.log('Populating database...');
+    
     console.log("Populating Authors");
-    try {
-        AUTHORS.forEach(async (author) => {
+    for (const author of AUTHORS) {
+        try {
             await createAuthor(author.authorId, author.name, author.dateOfBirth, author.countryOfOrigin, author.shortDescription);
+        } catch (error) {
+            console.error('Error creating author:', error);
         }
-    );
-    } catch (error) {
-        console.error('Error creating authors:', error);
     }
-    console.log("populating books");
-    try {
-        BOOKS.forEach(async (book) => {
-            await createBook(book.bookId, book.authorId, book.name, book.summary, book.dateOfPublication, book.numberOfSales);
-        });
-    } catch (error) {
-        console.error('Error creating books:', error);
-    }
-    console.log("populating reviews");
-    try {
-        REVIEWS.forEach(async (review) => {
-            await createReview(review.reviewId, review.bookId, review.review, review.score, review.numberOfUpvotes);
-        });
-    } catch (error) {
-        console.error('Error creating reviews:', error);
-    }
-    console.log("populating sales by year");
-    try {
-        SALES_BY_YEAR.forEach(async (salesByYear) => {
-            await createSalesByYear(salesByYear.salesByYearId, salesByYear.bookId, salesByYear.year, salesByYear.sales);
-        });
-    } catch (error) {
-        console.error('Error creating sales by year:', error);
-    }
-    console.log('Database populated successfully');
-}
 
-populateDb();
+    console.log("Populating Books");
+    for (const book of BOOKS) {
+        try {
+            await createBook(book.bookId, book.authorId, book.name, book.summary, book.dateOfPublication, book.numberOfSales);
+        } catch (error) {
+            console.error('Error creating book:', error);
+        }
+    }
+
+    console.log("Populating Reviews");
+    for (const review of REVIEWS) {
+        try {
+            await createReview(review.reviewId, review.bookId, review.review, review.score, review.numberOfUpvotes);
+        } catch (error) {
+            console.error('Error creating review:', error);
+        }
+    }
+
+    console.log("Populating Sales by Year");
+    for (const salesByYear of SALES_BY_YEAR) {
+        try {
+            await createSalesByYear(salesByYear.salesByYearId, salesByYear.bookId, salesByYear.year, salesByYear.sales);
+        } catch (error) {
+            console.error('Error creating sales by year:', error);
+        }
+    }
+
+    console.log('Database populated successfully');
+};
+initialize().catch(console.error);

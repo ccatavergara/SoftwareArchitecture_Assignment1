@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
-const createTables = require('./createTables');
 
 const app = express();
 const port = 3000;
@@ -9,7 +8,6 @@ const port = 3000;
 app.use(bodyParser.json());
 
 // Create tables if they don't exist
-createTables();
 
 // Import routes
 const authorRoutes = require('./routes/author');

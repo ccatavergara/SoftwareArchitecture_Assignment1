@@ -13,6 +13,7 @@ services:
       timeout: 10s
       retries: 5
 
+
   web:
     build: .
     container_name: express-cassandra-app-web

@@ -16,5 +16,7 @@ COPY . .
 # Expose the port that the app runs on
 EXPOSE 3000
 
+# Add this line before the CMD instruction
+
 # Command to run the application
-CMD ["./entrypoint.sh"]
+CMD ["npm", "start"]
