@@ -1,155 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales By Year</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sales</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 </head>
 <body>
-    <h1>Sales By Year</h1>
-    <ul id="sales-list"></ul>
-    <button onclick="window.location.href='/'">Back to Home</button>
-    <button onclick="showAddSaleForm()">Add Sale</button>
+    <div class="container">
+        <h1>Sales by Year</h1>
+        <ul id="sales-list" class="list-group"></ul>
+        <button onclick="showAddSaleForm()" class="btn btn-primary">Add Sale</button>
 
-    <div id="add-sale-form" style="display: none;">
-        <h2>Add New Sale</h2>
-        <form id="sale-form">
-            <label for="year">Year:</label>
-            <input type="number" id="year" name="year" required>
-            <br>
-            <label for="sales">Total Sales:</label>
-            <input type="number" id="sales" name="sales" required>
-            <br>
-            <button type="submit">Submit</button>
-        </form>
+        <div id="add-sale-form" style="display: none;">
+            <h2>Add New Sale</h2>
+            <form id="sale-form">
+                <div class="form-group">
+                    <label for="year">Year:</label>
+                    <input type="number" id="year" name="year" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="sales">Total Sales:</label>
+                    <input type="number" id="sales" name="sales" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="book_id">Book:</label>
+                    <select id="book_id" name="book_id" class="form-control" required></select>
+                </div>
+                <button type="submit" class="btn btn-success">Submit</button>
+            </form>
+        </div>
+
+        <div id="edit-sale-form" style="display: none;">
+            <h2>Edit Sale</h2>
+            <form id="edit-sale-form-content">
+                <input type="hidden" id="edit-sale-id" name="id">
+                <div class="form-group">
+                    <label for="edit-year">Year:</label>
+                    <input type="number" id="edit-year" name="year" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-sales">Total Sales:</label>
+                    <input type="number" id="edit-sales" name="sales" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-book_id">Book:</label>
+                    <select id="edit-book_id" name="book_id" class="form-control" required></select>
+                </div>
+                <button type="submit" class="btn btn-success">Submit</button>
+            </form>
+        </div>
     </div>
 
-    <div id="edit-sale-form" style="display: none;">
-        <h2>Edit Sale</h2>
-        <form id="edit-sale-form-content">
-            <input type="hidden" id="edit-sale-id" name="id">
-            <label for="edit-year">Year:</label>
-            <input type="number" id="edit-year" name="year" required>
-            <br>
-            <label for="edit-sales">Total Sales:</label>
-            <input type="number" id="edit-sales" name="sales" required>
-            <br>
-            <button type="submit">Update</button>
-        </form>
-    </div>
-
-    <script>
-        async function fetchSales() {
-            try {
-                const response = await fetch('/api/salesByYear');
-                const sales = await response.json();
-                const salesList = document.getElementById('sales-list');
-                salesList.innerHTML = '';
-                sales.forEach(sale => {
-                    const listItem = document.createElement('li');
-                    listItem.innerHTML = `
-                        Year: ${sale.year} - Total Sales: ${sale.sales}
-                        <button onclick="editSale('${sale.id}')">Edit</button>
-                        <button onclick="deleteSale('${sale.id}')">Delete</button>
-                    `;
-                    salesList.appendChild(listItem);
-                });
-            } catch (error) {
-                console.error('Error fetching sales:', error);
-            }
-        }
-
-        function showAddSaleForm() {
-            document.getElementById('add-sale-form').style.display = 'block';
-        }
-
-        function showEditSaleForm(sale) {
-            document.getElementById('edit-sale-form').style.display = 'block';
-            document.getElementById('edit-sale-id').value = sale.id;
-            document.getElementById('edit-year').value = sale.year;
-            document.getElementById('edit-sales').value = sale.sales;
-        }
-
-        async function editSale(saleId) {
-            try {
-                const response = await fetch(`/api/salesByYear/${saleId}`);
-                const sale = await response.json();
-                showEditSaleForm(sale);
-            } catch (error) {
-                console.error('Error fetching sale for edit:', error);
-            }
-        }
-
-        async function deleteSale(saleId) {
-            try {
-                const response = await fetch(`/api/salesByYear/${saleId}`, {
-                    method: 'DELETE'
-                });
-                if (response.ok) {
-                    alert('Sale deleted successfully!');
-                    window.location.reload();
-                } else {
-                    const error = await response.json();
-                    alert('Error deleting sale: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error deleting sale:', error);
-                alert('Error deleting sale');
-            }
-        }
-
-        document.getElementById('sale-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const response = await fetch('/api/salesByYear', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    alert('Sale added successfully!');
-                    window.location.reload();
-                } else {
-                    const error = await response.json();
-                    alert('Error adding sale: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error adding sale:', error);
-                alert('Error adding sale');
-            }
-        });
-
-        document.getElementById('edit-sale-form-content').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const response = await fetch(`/api/salesByYear/${data.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    alert('Sale updated successfully!');
-                    window.location.reload();
-                } else {
-                    const error = await response.json();
-                    alert('Error updating sale: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error updating sale:', error);
-                alert('Error updating sale');
-            }
-        });
-
-        fetchSales();
-    </script>
+    <script src="salesByYear.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 </body>
 </html>

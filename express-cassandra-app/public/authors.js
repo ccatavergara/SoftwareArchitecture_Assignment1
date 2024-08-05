@@ -5,11 +5,13 @@ async function fetchAuthors() {
         const authorsList = document.getElementById('authors-list');
         authorsList.innerHTML = '';
         authors.forEach(author => {
-            const listItem = document.createElement('li');
+            const listItem = document.createElement('tr');
             listItem.innerHTML = `
-                ${author.name} (${author.date_of_birth} - ${author.country_of_origin})
-                <button onclick="editAuthor('${author.id}')">Edit</button>
-                <button onclick="deleteAuthor('${author.id}')">Delete</button>
+            <td>${author.name}</td>
+            <td>${author.date_of_birth}</td>
+            <td>${author.country_of_origin}</td>
+            <td><button onclick="editAuthor('${author.id}')">Edit</button></td>
+            <td><button onclick="deleteAuthor('${author.id}')">Delete</button></td>
             `;
             authorsList.appendChild(listItem);
         });
