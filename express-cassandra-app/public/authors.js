@@ -10,6 +10,7 @@ async function fetchAuthors() {
             <td>${author.name}</td>
             <td>${author.date_of_birth}</td>
             <td>${author.country_of_origin}</td>
+            <td>${author.short_description}</td>
             <td><button onclick="editAuthor('${author.id}')">Edit</button></td>
             <td><button onclick="deleteAuthor('${author.id}')">Delete</button></td>
             `;

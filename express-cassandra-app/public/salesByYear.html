@@ -10,7 +10,7 @@
 <body>
     <div class="container">
         <h1>Sales by Year</h1>
-        <ul id="sales-list" class="list-group"></ul>
+        <button onclick="window.location.href='/'" class="btn btn-light">Back to Home</button>
         <button onclick="showAddSaleForm()" class="btn btn-primary">Add Sale</button>
 
         <div id="add-sale-form" style="display: none;">
@@ -51,6 +51,21 @@
                 <button type="submit" class="btn btn-success">Submit</button>
             </form>
         </div>
+    </div>
+
+    <div class="container">
+        <table class="table table-stripped">
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Year</th>
+                <th>Total Sales</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+            <tbody id="sales-list"></tbody>
+        </table>
     </div>
 
     <script src="salesByYear.js"></script>

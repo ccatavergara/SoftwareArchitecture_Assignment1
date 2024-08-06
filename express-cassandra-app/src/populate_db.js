@@ -10,10 +10,10 @@ async function initialize() {
     console.log('Creating tables...');
     await createTables();
     console.log('Tables created successfully');
-    
+
     console.log('Waiting for 5 seconds...');
-    await delay(5000);  // 5000 milliseconds = 5 seconds
-    
+    await delay(5000); 
+
     console.log('Continuing with database population...');
     await populateDb().then(() => {
         console.log('Database population completed successfully');
@@ -127,7 +127,7 @@ const SALES_BY_YEAR = BOOKS.flatMap((book) => {
 
 const populateDb = async () => {
     console.log('Populating database...');
-    
+
     console.log("Populating Authors");
     for (const author of AUTHORS) {
         try {

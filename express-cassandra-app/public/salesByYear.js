@@ -12,11 +12,13 @@ async function fetchSales() {
         salesList.innerHTML = '';
         sales.forEach(sale => {
             const bookName = bookMap.get(sale.book_id) || 'Unknown';
-            const listItem = document.createElement('li');
+            const listItem = document.createElement('tr');
             listItem.innerHTML = `
-                Year: ${sale.year} - Book: ${bookName} - Total Sales: ${sale.sales}
-                <button onclick="editSale('${sale.id}')">Edit</button>
-                <button onclick="deleteSale('${sale.id}')">Delete</button>
+                <td>${bookName}</td>
+                <td>${sale.year}</td>
+                <td>${sale.sales}</td>
+                <td><button onclick="editSale('${sale.id}')">Edit</button></td>
+                <td><button onclick="deleteSale('${sale.id}')">Delete</button></td>
             `;
             salesList.appendChild(listItem);
         });
@@ -37,7 +39,7 @@ async function fetchBooks() {
 
 function showAddSaleForm() {
     document.getElementById('add-sale-form').style.display = 'block';
-    populateBookDropdown('book_id'); 
+    populateBookDropdown('book_id');
 }
 
 function showEditSaleForm(sale) {
@@ -45,7 +47,7 @@ function showEditSaleForm(sale) {
     document.getElementById('edit-sale-id').value = sale.id;
     document.getElementById('edit-year').value = sale.year;
     document.getElementById('edit-sales').value = sale.sales;
-    populateBookDropdown('edit-book_id', sale.book_id); 
+    populateBookDropdown('edit-book_id', sale.book_id);
 }
 
 async function populateBookDropdown(elementId, selectedBookId = null) {

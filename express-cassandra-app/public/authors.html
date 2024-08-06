@@ -12,21 +12,6 @@
     <button onclick="window.location.href='/'" class="btn btn-dark">Back to Home</button>
     <button onclick="showAddAuthorForm()" class="btn btn-succes">Add Book</button>
 
-    <div class="container">
-        <table class="table table-stripped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Date of Birth</th>
-                <th>Country</th>
-                <th>Edit</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-            <tbody id="authors-list"></tbody>
-        </table>
-        </div>
-
     <div id="add-author-form" style="display: none;">
         <h2>Add New Author</h2>
         <form id="author-form">
@@ -49,6 +34,7 @@
     <div id="edit-author-form" style="display: none;">
         <h2>Edit Author</h2>
         <form id="edit-author-form">
+            <div class="form-group">
             <input type="hidden" id="edit-author-id" name="id">
             <label for="edit-name">Name:</label>
             <input type="text" id="edit-name" name="name" required>
@@ -63,7 +49,24 @@
             <textarea id="edit-short_description" name="short_description" required></textarea>
             <br>
             <button type="submit">Update</button>
+        </div>
         </form>
+    </div>
+
+    <div class="container">
+        <table class="table table-stripped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Date of Birth</th>
+                <th>Country</th>
+                <th>Description</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+            <tbody id="authors-list"></tbody>
+        </table>
     </div>
 
     <script src="authors.js"></script>

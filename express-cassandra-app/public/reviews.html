@@ -9,9 +9,7 @@
 </head>
 <body>
     <h1>Reviews</h1>
-    <ul id="reviews-list">
-    </ul>
-    <button onclick="window.location.href='/'">Back to Home</button>
+    <button onclick="window.location.href='/'" class="btn btn-light">Back to Home</button>
     <button onclick="showAddReviewForm()">Add Review</button>
 
     <div id="add-review-form" style="display: none;">
@@ -59,6 +57,22 @@
         </form>
     </div>
 
+    <div class="container">
+        <table class="table table-stripped">
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Review</th>
+                <th>Score</th>
+                <th>Upvotes</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+            <tbody id="reviews-list"></tbody>
+        </table>
+    </div>
+
     <script>
         // Fetch books for dropdown
         async function fetchBooks() {
@@ -81,11 +95,14 @@
                 const reviews = await response.json();
                 const reviewsList = document.getElementById('reviews-list');
                 reviewsList.innerHTML = reviews.map(review => `
-                    <li>
-                        ${review.book}: ${review.review} (Score: ${review.score})
-                        <button onclick="editReview('${review.id}')">Edit</button>
-                        <button onclick="deleteReview('${review.id}')">Delete</button>
-                    </li>
+                    <tr>
+                        <td>${review.book}</td>
+                        <td>${review.review}</td>
+                        <td>${review.score}</td>
+                        <td>${review.number_of_upvotes}</td>
+                        <td><button onclick="editReview('${review.id}')">Edit</button></td>
+                        <td><button onclick="deleteReview('${review.id}')">Delete</button></td>
+                    </tr>
                 `).join('');
             } catch (error) {
                 console.error('Error fetching reviews:', error);

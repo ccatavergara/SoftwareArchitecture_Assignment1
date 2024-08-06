@@ -13,25 +13,10 @@
     <button onclick="window.location.href='/'" class="btn btn-dark">Back to Home</button>
     <button onclick="showAddBookForm()" class="btn btn-succes">Add Book</button>
 
-    <div class="container">
-    <table class="table table-stripped">
-    <thead>
-        <tr>
-            <th>Book</th>
-            <th>Summary</th>
-            <th>Date of Publication</th>
-            <th>Number of Sales</th>
-            <th>Edit</th>
-            <th>Delete</th>
-        </tr>
-    </thead>
-        <tbody id="books-list"></tbody>
-    </table>
-    </div>
-
     <div id="add-book-form" style="display: none;">
         <h2>Add New Book</h2>
         <form id="book-form">
+            <div class="form-group">
             <label for="name">Name:</label>
             <input type="text" id="name" name="name" required>
             <br>
@@ -45,12 +30,14 @@
             <input type="number" id="number_of_sales" name="number_of_sales">
             <br>
             <button type="submit">Submit</button>
+            </div>
         </form>
     </div>
 
     <div id="edit-book-form" style="display: none;">
         <h2>Edit Book</h2>
         <form id="edit-book-form-content">
+            <div class="form-group">
             <input type="hidden" id="edit-book-id" name="id">
             <label for="edit-name">Name:</label>
             <input type="text" id="edit-name" name="name" required>
@@ -65,7 +52,24 @@
             <input type="number" id="edit-number_of_sales" name="number_of_sales">
             <br>
             <button type="submit">Update</button>
+        </div>
         </form>
+    </div>
+
+    <div class="container">
+        <table class="table table-stripped">
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Summary</th>
+                <th>Date of Publication</th>
+                <th>Number of Sales</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+            <tbody id="books-list"></tbody>
+        </table>
     </div>
 
     <script src='books.js'></script>
