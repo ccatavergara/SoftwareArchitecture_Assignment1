@@ -98,7 +98,7 @@
                 const reviewsList = document.getElementById('reviews-list');
                 reviewsList.innerHTML = reviews.map(review => `
                     <tr>
-                        <td>${review.book}</td>
+                        <td>${review.book.name}</td>
                         <td>${review.review}</td>
                         <td>${review.score}</td>
                         <td>${review.number_of_upvotes}</td>

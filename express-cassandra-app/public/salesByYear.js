@@ -2,7 +2,7 @@ async function fetchSales() {
     try {
         const response = await fetch('/api/salesByYear');
         const sales = await response.json();
-        const books = await fetchBooks(); // Fetch books once
+        const books = await fetchBooks();
         const bookMap = new Map();
         books.forEach(book => {
             bookMap.set(book.id, book.name);
@@ -11,7 +11,7 @@ async function fetchSales() {
         const salesList = document.getElementById('sales-list');
         salesList.innerHTML = '';
         sales.forEach(sale => {
-            const bookName = bookMap.get(sale.book_id) || 'Unknown';
+            const bookName = bookMap.get(sale.book) || 'Unknown';
             const listItem = document.createElement('tr');
             listItem.innerHTML = `
                 <td>${bookName}</td>
@@ -39,7 +39,7 @@ async function fetchBooks() {
 
 function showAddSaleForm() {
     document.getElementById('add-sale-form').style.display = 'block';
-    populateBookDropdown('book_id');
+    populateBookDropdown('book');
 }
 
 function showEditSaleForm(sale) {
@@ -47,13 +47,13 @@ function showEditSaleForm(sale) {
     document.getElementById('edit-sale-id').value = sale.id;
     document.getElementById('edit-year').value = sale.year;
     document.getElementById('edit-sales').value = sale.sales;
-    populateBookDropdown('edit-book_id', sale.book_id);
+    populateBookDropdown('edit-book', sale.book);
 }
 
 async function populateBookDropdown(elementId, selectedBookId = null) {
     const books = await fetchBooks();
     const bookSelect = document.getElementById(elementId);
-    bookSelect.innerHTML = ''; // Clear existing options
+    bookSelect.innerHTML = '';
     books.forEach(book => {
         const option = document.createElement('option');
         option.value = book.id;
