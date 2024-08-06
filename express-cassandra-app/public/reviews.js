@@ -1,7 +1,9 @@
+
 // Fetch books for dropdown
 async function fetchBooks() {
     try {
         const response = await fetch('/api/books');
+        if (!response.ok) throw new Error('Network response was not ok');
         const books = await response.json();
         const bookSelects = document.querySelectorAll('select[name="book"], select[name="edit-book"]');
         bookSelects.forEach(select => {
@@ -16,6 +18,7 @@ async function fetchBooks() {
 async function fetchReviews() {
     try {
         const response = await fetch('/api/reviews');
+        if (!response.ok) throw new Error('Network response was not ok');
         const reviews = await response.json();
         const reviewsList = document.getElementById('reviews-list');
         reviewsList.innerHTML = reviews.map(review => `
@@ -49,10 +52,12 @@ function showEditReviewForm(review) {
 async function editReview(reviewId) {
     try {
         const response = await fetch(`/api/reviews/${reviewId}`);
+        if (!response.ok) throw new Error('Network response was not ok');
         const review = await response.json();
         showEditReviewForm(review);
     } catch (error) {
         console.error('Error fetching review for edit:', error);
+        alert('Error fetching review for edit');
     }
 }
 

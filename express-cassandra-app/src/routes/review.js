@@ -61,4 +61,15 @@ router.delete('/reviews/:id', async (req, res) => {
   }
 });
 
+// GET SPECIFIC REVIEW
+router.get('/reviews/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await client.execute('SELECT * FROM reviews WHERE id = ?', [id]);
+    res.json(result.rowLength ? result.rows[0] : {});
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching review' });
+  }
+});
+
 module.exports = router;
