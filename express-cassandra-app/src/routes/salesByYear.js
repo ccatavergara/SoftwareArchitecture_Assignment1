@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const client = require('../db');
-const { v4: uuid } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const cassandra = require('cassandra-driver');
 
 // GET SALES BY YEAR
@@ -16,18 +16,20 @@ router.get('/salesByYear', async (req, res) => {
 
 // CREATE SALE
 router.post('/salesByYear', async (req, res) => {
-  const { year, sales, book } = req.body;
+  const { book, year, sales } = req.body;
+  const id = uuidv4();
+
+  const query = 'INSERT INTO sales_by_year (id, book, year, sales) VALUES (?, ?, ?, ?)';
+  const params = [id, book, year, sales];
+
+  console.log("DATA:", id, book, year, sales);
 
   try {
-    await client.execute(
-      'INSERT INTO sales_by_year (id, book, year, sales) VALUES (?, ?, ?)',
-      [uuid(), book, year, parseInt(sales, 10)],
-      { prepare: true }
-    );
-    res.status(201).json({ message: 'Sale added successfully' });
+      await client.execute(query, params, { prepare: true });
+      res.status(201).send({ message: 'Sale added successfully!' });
   } catch (error) {
-    console.error('Error adding sale:', error);
-    res.status(500).json({ error: `Error adding sale: ${error.message}` });
+      console.error('Error adding sale:', error);
+      res.status(500).send({ error: 'Error adding sale: ' + error.message });
   }
 });
 

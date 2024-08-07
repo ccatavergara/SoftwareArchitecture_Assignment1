@@ -7,19 +7,21 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
-// Create tables if they don't exist
-
 // Import routes
 const authorRoutes = require('./routes/author');
 const bookRoutes = require('./routes/book');
 const reviewRoutes = require('./routes/review');
 const salesByYearRoutes = require('./routes/salesByYear');
+const tablesRoutes = require('./routes/tables');
+const top10Books = require('./routes/top10Books');
 
 // Use routes
 app.use('/api', authorRoutes);
 app.use('/api', bookRoutes);
 app.use('/api', reviewRoutes);
 app.use('/api', salesByYearRoutes);
+app.use('/api', tablesRoutes);
+app.use('/api', top10Books);
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, '../public')));

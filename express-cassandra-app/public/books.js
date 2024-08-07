@@ -55,12 +55,16 @@ async function fetchBooks() {
         const booksList = document.getElementById('books-list');
         booksList.innerHTML = '';
         books.forEach(book => {
-            const listItem = document.createElement('li');
+            const listItem = document.createElement('tr');
             listItem.innerHTML = `
-                ${book.name}: ${book.summary} <br>(${book.date_of_publication}) - Sales: ${book.number_of_sales}
-                <button onclick="editBook('${book.id}')">Edit</button>
-                <button onclick="deleteBook('${book.id}')">Delete</button>
-            `;
+            
+                <td>${book.name}</td>
+                <td>${book.summary}</td>
+                <td>${book.date_of_publication}</td>
+                <td>${book.number_of_sales}</td>
+                <td><button onclick="editBook('${book.id}')">Edit</button></td>
+                <td><button onclick="deleteBook('${book.id}')">Delete</button></td>
+                        `;
             booksList.appendChild(listItem);
         });
     } catch (error) {

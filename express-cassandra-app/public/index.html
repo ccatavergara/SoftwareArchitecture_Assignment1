@@ -1,52 +1,30 @@
-{{!-- index.html --}}
-{{> base }}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sales</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+</head>
 <body>
     <h1>Welcome to the Book App</h1>
-    <button onclick="window.location.href='/authors.html'">Authors</button>
-    <button onclick="window.location.href='/books.html'">Books</button>
-    <button onclick="window.location.href='/reviews.html'">Reviews</button>
-    <button onclick="window.location.href='/salesByYear.html'">Sales By Year</button>
 
-    <table>
-        <tr>
-          <th>Authors</th>
-          <th># Published Books</th>
-          <th>Average Score</th>
-          <th>Total Sales</th>
-        </tr>
-        <tr>
-          <td>Alfreds Futterkiste</td>
-          <td>Maria Anders</td>
-          <td>Germany</td>
-          <td>Germany</td>
-        </tr>
-        <tr>
-          <td>Centro comercial Moctezuma</td>
-          <td>Francisco Chang</td>
-          <td>Mexico</td>
-          <td>Mexico</td>
-        </tr>
-    </table>
+    <div class="container">
+      <button onclick="window.location.href='/authors.html'" class="btn btn-light">Authors</button>
+      <button onclick="window.location.href='/books.html'" class="btn btn-light">Books</button>
+      <button onclick="window.location.href='/reviews.html'" class="btn btn-light">Reviews</button>
+      <button onclick="window.location.href='/salesByYear.html'" class="btn btn-light">Sales By Year</button>
+      <button onclick="window.location.href='/tables.html'" class="btn btn-light">Statistics Tables</button>
+      <button onclick="window.location.href='/top10Books.html'" class="btn btn-light">Top 10 Books</button>
+    </div>
+    <br>
 
-    <table>
-        <h2>Top 10 Rated Books of All Time</h2>
-        <tr>
-          <th>Authors</th>
-          <th># Published Books</th>
-          <th>Average Score</th>
-          <th>Total Sales</th>
-        </tr>
-        <tr>
-          <td>Alfreds Futterkiste</td>
-          <td>Maria Anders</td>
-          <td>Germany</td>
-          <td>Germany</td>
-        </tr>
-        <tr>
-          <td>Centro comercial Moctezuma</td>
-          <td>Francisco Chang</td>
-          <td>Mexico</td>
-          <td>Mexico</td>
-        </tr>
-    </table>
+    <button class="btn btn-light">Search</button>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+
+</body>
+</html>
 
