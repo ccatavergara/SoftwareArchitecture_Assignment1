@@ -14,6 +14,7 @@ const reviewRoutes = require('./routes/review');
 const salesByYearRoutes = require('./routes/salesByYear');
 const tablesRoutes = require('./routes/tables');
 const top10Books = require('./routes/top10Books');
+const search = require('./routes/search');
 
 // Use routes
 app.use('/api', authorRoutes);
@@ -22,6 +23,7 @@ app.use('/api', reviewRoutes);
 app.use('/api', salesByYearRoutes);
 app.use('/api', tablesRoutes);
 app.use('/api', top10Books);
+app.use('/api', search);
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, '../public')));

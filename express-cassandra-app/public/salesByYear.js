@@ -47,13 +47,15 @@ function showEditSaleForm(sale) {
     document.getElementById('edit-sale-id').value = sale.id;
     document.getElementById('edit-year').value = sale.year;
     document.getElementById('edit-sales').value = sale.sales;
-    populateBookDropdown('edit-book', sale.book);
+    populateBookDropdown('edit-book_id', sale.book);
 }
 
 async function populateBookDropdown(elementId, selectedBookId = null) {
     const books = await fetchBooks();
     const bookSelect = document.getElementById(elementId);
+    console.log(bookSelect);
     bookSelect.innerHTML = '';
+    console.log('Book');
     books.forEach(book => {
         const option = document.createElement('option');
         option.value = book.id;
@@ -69,6 +71,7 @@ async function editSale(saleId) {
     try {
         const response = await fetch(`/api/salesByYear/${saleId}`);
         const sale = await response.json();
+        console.log(sale);
         showEditSaleForm(sale);
     } catch (error) {
         console.error('Error fetching sale for edit:', error);

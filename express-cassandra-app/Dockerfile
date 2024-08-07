@@ -12,6 +12,8 @@ COPY package*.json ./
 
 # Install dependencies
 RUN npm install
+RUN npm install -g nodemon
+
 # RUN chmod +x /docker-entrypoint-initdb.d/init_keyspace.sh
 
 # ENTRYPOINT ["/docker-entrypoint-initdb.d/init_keyspace.sh"]
@@ -25,4 +27,4 @@ EXPOSE 3000
 # Add this line before the CMD instruction
 
 # Command to run the application
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

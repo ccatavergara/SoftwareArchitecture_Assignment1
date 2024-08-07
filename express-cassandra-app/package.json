@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/populate_db.js &&  node src/app.js"
+    "start": "node src/populate_db.js &&  node src/app.js",
+    "dev": "node src/populate_db.js && nodemon --legacy-watch -e js,html,css --watch src --watch public src/app.js"
   },
   "keywords": [],
   "author": "",

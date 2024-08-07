@@ -29,9 +29,13 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-
     networks:
       - mynetwork
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
 
 networks:
   mynetwork:

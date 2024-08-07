@@ -41,11 +41,14 @@ const createTables = async () => {
     );
   `;
 
+  const createIndexingForBooks = `CREATE CUSTOM INDEX books_summary_idx ON books (summary) USING 'org.apache.cassandra.index.sasi.SASIIndex' WITH OPTIONS =  {'mode': 'CONTAINS'};`;
+
   try {
     await executeCqlCommand(createAuthorsTable);
     await executeCqlCommand(createBooksTable);
     await executeCqlCommand(createReviewsTable);
     await executeCqlCommand(createSalesByYearTable);
+    await executeCqlCommand(createIndexingForBooks);
     console.log('Tables created successfully');
   } catch (error) {
     console.error('Error creating tables:', error);
