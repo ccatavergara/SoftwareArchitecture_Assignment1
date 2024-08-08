@@ -25,10 +25,6 @@ SALES PER YEAR
     YEAR - INT
     NUMBER OF SALES - INT
 
-BOOKAUTHOR
-    BOOK
-    AUTHOR
-
 ## Instructions to run the project
 
 ```sh
