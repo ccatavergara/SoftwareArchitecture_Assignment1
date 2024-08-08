@@ -3,6 +3,8 @@ const { faker, de } = require('@faker-js/faker');
 
 const createTables = require('./createTables');
 const client = require('./db');
+const fiveYearsAgo = new Date();
+fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -71,8 +73,8 @@ function createRandomBook(authorId) {
         authorId: authorId,
         name: faker.commerce.productName(),
         summary: faker.lorem.paragraph(),
-        dateOfPublication: faker.date.past({ refDate: new Date('2017-01-01') }),
-        numberOfSales: faker.number.int(300000),
+        dateOfPublication: faker.date.between({ from: fiveYearsAgo, to: new Date() }),
+        numberOfSales: 0,
     }
 }
 
@@ -85,6 +87,12 @@ function createRandomReview(bookId) {
         score: faker.number.int(5),
         numberOfUpvotes: faker.number.int(10000),
     }
+}
+
+
+function updateNumberOfSales(bookId, sales) {
+    let query =  `UPDATE books SET number_of_sales =  ? WHERE id = ?`;
+    return executeCqlCommand(query, [sales, bookId]);
 }
 
 
@@ -156,8 +164,21 @@ const populateDb = async () => {
     }
 
     console.log("Populating Sales by Year");
+    let actualBook = '';
+    let totalSales = 0;
     for (const salesByYear of SALES_BY_YEAR) {
         try {
+            if (actualBook !== salesByYear.bookId) {
+                if (actualBook === '') {
+                    actualBook = salesByYear.bookId;
+                }
+                else{
+                    await updateNumberOfSales(actualBook, totalSales);
+                }
+                totalSales = 0;
+                actualBook = salesByYear.bookId;
+            }
+            totalSales += salesByYear.sales;
             await createSalesByYear(salesByYear.salesByYearId, salesByYear.bookId, salesByYear.year, salesByYear.sales);
         } catch (error) {
             console.error('Error creating sales by year:', error);

@@ -18,8 +18,8 @@ const createTables = async () => {
       name TEXT,
       summary TEXT,
       date_of_publication DATE,
-      number_of_sales INT
-    );
+      number_of_sales INT,
+);
   `;
 
   const createReviewsTable = `
