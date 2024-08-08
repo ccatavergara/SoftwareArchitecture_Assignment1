@@ -29,3 +29,11 @@ BOOKAUTHOR
     BOOK
     AUTHOR
 
+## Instructions to run the project
+
+```sh
+$ cd express-cassandra-app/
+$ docker-compose up --build
+```
+
+Finally go to http://localhost:3000

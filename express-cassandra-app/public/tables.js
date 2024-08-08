@@ -9,18 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/tables');
       const data = await response.json();
     //   const info = data.authorData;
-      const infoList = document.getElementById('authors-info');
-      infoList.innerHTML = '';
-      data.forEach(row => {
-        const listItem = document.createElement('tr');
-        listItem.innerHTML = `
-          <td>${row.author}</td>
-          <td>${row.numBooks}</td>
-          <td>${row.avgScore.toFixed(2)}</td>
-          <td>${row.totalSales}</td>
-        `;
-        infoList.appendChild(listItem);
-      });
+      console.log(data);
+      let grid = new gridjs.Grid({
+        columns : ['Author', 'Number of Books', 'Average Score', 'Total sales'],
+        sort: true,
+        search:true,
+        data : data.map((author) => {
+            return [author.author, author.numBooks, author.avgScore.toFixed(2), author.totalSales];
+        }),
+      }).render(document.getElementById('author-info'));
     } catch (error) {
       console.error('Error fetching information:', error);
     }
