@@ -11,7 +11,7 @@ function getBooksByDescription(e) {
     e.preventDefault();
     console.log("llegue a la funcion");
     const wrapper = document.getElementById('wrapper');
-    wrapper.innerHTML = ''; // Clear the wrapper
+    wrapper.innerHTML = '';
 
     const description = document.getElementById('search').value;
     console.log(description);
@@ -24,13 +24,11 @@ function getBooksByDescription(e) {
                 return;
             }
 
-            // If grid already exists, update its data
             if (grid) {
                 grid.updateConfig({
                     data: books.map(book => [book.name, book.author, book.date_of_publication, book.number_of_sales, book.summary])
                 }).forceRender();
             } else {
-                // Create new grid if it doesn't exist
                 grid = new gridjs.Grid({
                     columns: ['Title', 'Author', 'Published', 'Total Sales', 'Summary'],
                     data: books.map(book => [book.name, book.author, book.date_of_publication, book.number_of_sales, book.summary]),
@@ -39,12 +37,11 @@ function getBooksByDescription(e) {
                     }
                 });
 
-                // Render the grid after a short delay to ensure DOM is ready
                 setTimeout(() => {
                     grid.render(wrapper);
                 }, 0);
             }
-        }).catch(error => { 
+        }).catch(error => {
             console.error(error);
             wrapper.innerHTML = '<h2>Error fetching books</h2>';
         });
