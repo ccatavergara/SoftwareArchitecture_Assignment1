@@ -96,9 +96,10 @@
                 if (!response.ok) throw new Error('Network response was not ok');
                 const reviews = await response.json();
                 const reviewsList = document.getElementById('reviews-list');
+                console.log(reviews);
                 reviewsList.innerHTML = reviews.map(review => `
                     <tr>
-                        <td>${review.book.name}</td>
+                        <td>${review.bookName}</td>
                         <td>${review.review}</td>
                         <td>${review.score}</td>
                         <td>${review.number_of_upvotes}</td>

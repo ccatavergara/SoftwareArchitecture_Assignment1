@@ -7,6 +7,16 @@ const { v4: uuid } = require('uuid');
 router.get('/reviews', async (req, res) => {
   try {
     const result = await client.execute('SELECT * FROM reviews');
+    const books = await client.execute('SELECT * FROM books');
+    const bookReduced = books.rows.map((book) => {
+      return { id: book.id, name: book.name };
+    });
+    result.rows.forEach((review) => {
+      
+
+      const book = bookReduced.find((book) => book.id.toString() === review.book.toString());
+      review["bookName"] = book.name;
+    });
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching reviews' });

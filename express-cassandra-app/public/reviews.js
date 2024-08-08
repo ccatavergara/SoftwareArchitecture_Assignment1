@@ -17,10 +17,12 @@ async function fetchBooks() {
 // Fetch reviews and display them
 async function fetchReviews() {
     try {
+        console.log("entre a la funcion")
         const response = await fetch('/api/reviews');
         if (!response.ok) throw new Error('Network response was not ok');
         const reviews = await response.json();
         const reviewsList = document.getElementById('reviews-list');
+        console.log(reviews);
         reviewsList.innerHTML = reviews.map(review => `
             <li>
                 ${review.book}: ${review.review} (Score: ${review.score})
