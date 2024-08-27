@@ -3,33 +3,78 @@ const router = express.Router();
 const client = require('../db');
 const { v4: uuid } = require('uuid');
 const cassandra = require('cassandra-driver');
+const redisClient = require('../cacheDb');
 
 router.get('/tables', async (req, res) => {
     try {
-        const authorsResult = await client.execute('SELECT * FROM authors');
-        const authors = authorsResult.rows;
+        const cachedAuthors = await redisClient.getAsync('authors');
+        const cachedBooks = await redisClient.getAsync('books');
+        const cachedReviews = await redisClient.getAsync('reviews');
+        const cachedSales = await redisClient.getAsync('salesByYear');
+        const cachedAuthorInfo = await redisClient.getAsync('authorInfoTable');
+        conditions = [cachedAuthors, cachedBooks, cachedReviews, cachedSales, cachedAuthorInfo];
+        conditions = conditions.map(condition => condition !== null);
+        console.log(conditions)
+        if (conditions.every(condition => condition)) {
+            console.log('Using cached data');
+            return res.json(JSON.parse(cachedAuthorInfo));
+        }
+        let authors = [];
+        let books = [];
+        let reviews = [];
+        let sales = [];
+        if (cachedAuthors) {
+            console.log('Using cached authors');
+            authors = JSON.parse(cachedAuthors);
+        }
+        else {
+            const authorsResult = await client.execute('SELECT * FROM authors');
+            authors = authorsResult.rows;
+            redisClient.setAsync('authors', JSON.stringify(authors));
+        }
+        if (cachedBooks) {
+            console.log('Using cached books');
+            books = JSON.parse(cachedBooks);
+        }
+        else {
+            const booksResult = await client.execute('SELECT * FROM books');
+            books = booksResult.rows;
+            redisClient.setAsync('books', JSON.stringify(books));
+        }
+        
+        if (cachedReviews) {
+            console.log('Using cached reviews');
+            reviews = JSON.parse(cachedReviews);
+        }
+        else {
+            const reviewsResult = await client.execute('SELECT * FROM reviews');
+            reviews = reviewsResult.rows;
+            redisClient.setAsync('reviews', JSON.stringify(reviews));
+        }
 
-        const booksResult = await client.execute('SELECT * FROM books');
-        const books = booksResult.rows;
+        if (cachedSales) {
+            console.log('Using cached sales');
+            sales = JSON.parse(cachedSales);
+        }
+        else {
+            const salesResult = await client.execute('SELECT * FROM sales_by_year');
+            sales = salesResult.rows;
+            redisClient.setAsync('salesByYear', JSON.stringify(sales));
+        }
 
-        const reviewsResult = await client.execute('SELECT * FROM reviews');
-        const reviews = reviewsResult.rows;
-
-        const salesResult = await client.execute('SELECT * FROM sales_by_year');
-        const sales = salesResult.rows;
 
         const authorData = authors.map(author => {
-            const authorBooks = books.filter(book => book.author.equals(author.id));
+            const authorBooks = books.filter(book => book.author === author.id);
             const numBooks = authorBooks.length;
             const totalSales = authorBooks.reduce((acc, book) => {
-                const bookSales = sales.filter(sale => sale.book.equals(book.id));
+                const bookSales = sales.filter(sale => sale.book === book.id);
                 return acc + bookSales.reduce((acc, sale) => acc + sale.sales, 0);
             }, 0);
             const totalScore = authorBooks.reduce((acc, book) => {
-                const bookReviews = reviews.filter(review => review.book.equals(book.id));
+                const bookReviews = reviews.filter(review => review.book === book.id);
                 return acc + bookReviews.reduce((acc, review) => acc + review.score, 0);
             }, 0);
-            const numReviews = authorBooks.reduce((acc, book) => acc + reviews.filter(review => review.book.equals(book.id)).length, 0);
+            const numReviews = authorBooks.reduce((acc, book) => acc + reviews.filter(review => review.book === book.id).length, 0);
             const avgScore = numReviews ? totalScore / numReviews : 0;
 
             return {
@@ -40,7 +85,7 @@ router.get('/tables', async (req, res) => {
             };
         });
 
-        console.log(authorData);
+        redisClient.setAsync('authorInfoTable', JSON.stringify(authorData));
         res.json(authorData);
     } catch (error) {
         console.error('Error fetching information:', error);

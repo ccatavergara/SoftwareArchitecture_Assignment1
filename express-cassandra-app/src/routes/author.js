@@ -2,11 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuid } = require('uuid');
 const client = require('../db');
+const redisClient = require('../cacheDb');
 
 // GET AUTHORS
 router.get('/authors', async (req, res) => {
   try {
+    const cachedAuthors = await redisClient.getAsync('authors');
+    if (cachedAuthors) {
+      console.log("Using cached authors");
+      return res.json(JSON.parse(cachedAuthors));
+    }
     const result = await client.execute('SELECT * FROM authors');
+    console.log('Fetching authors from database');
+    redisClient.setAsync('authors', JSON.stringify(result.rows));
+    console.log('Cached authors');
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching authors:', error);
@@ -26,6 +35,8 @@ router.post('/authors', async (req, res) => {
       [uuid(), name, birthdate, country_of_origin, short_description],
       { prepare: true }
     );
+    redisClient.del('authors');
+    console.log('Deleted cached authors');
     res.status(201).json({ message: 'Author added successfully' });
   } catch (error) {
     console.error('Error adding author:', error);
@@ -46,6 +57,7 @@ router.put('/authors/:id', async (req, res) => {
       [name, birthdate, country_of_origin, short_description, id],
       { prepare: true }
     );
+    redisClient.del('authors');
     res.json({ message: 'Author updated successfully' });
   } catch (error) {
     console.error('Error updating author:', error);
@@ -59,6 +71,7 @@ router.delete('/authors/:id', async (req, res) => {
 
   try {
     await client.execute('DELETE FROM authors WHERE id = ?', [id], { prepare: true });
+    redisClient.del('authors');
     res.json({ message: 'Author deleted successfully' });
   } catch (error) {
     console.error('Error deleting author:', error);
@@ -70,6 +83,14 @@ router.delete('/authors/:id', async (req, res) => {
 router.get('/authors/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    cachedAuthors = await redisClient.getAsync('authors');
+    if (cachedAuthors) {
+      console.log("Using cached authors");
+      const author = JSON.parse(cachedAuthors).find((author) => author.id === id);
+      if (author) {
+        return res.json(author);
+      }
+    }
     const result = await client.execute('SELECT * FROM authors WHERE id = ?', [id]);
     if (result.rowLength === 0) {
       res.status(404).json({ error: 'Author not found' });
