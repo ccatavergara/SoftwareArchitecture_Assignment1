@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const client = require('../db');
+const redisClient = require('../cacheDb');
 
 async function getReviewsForBook(bookId) {
+  const cachedReviews = await redisClient.getAsync('reviews');
+  if (cachedReviews) {
+    return JSON.parse(cachedReviews).filter((review) => review.book === bookId);
+  }
   const query = 'SELECT * FROM reviews WHERE book = ? ALLOW FILTERING';
   const params = [bookId];
   const result = await client.execute(query, params, { prepare: true });
@@ -12,9 +17,22 @@ async function getReviewsForBook(bookId) {
 router.get('/top10Books', async (req, res) => {
   try {
     // Step 1: Fetch all books
-    const booksQuery = 'SELECT * FROM books';
-    const booksResult = await client.execute(booksQuery);
-    const books = booksResult.rows;
+    const cachedBooks = await redisClient.getAsync('books');
+    const cachedReviews = await redisClient.getAsync('reviews');
+    const cachedTop10Books = await redisClient.getAsync('top10Books');
+    conditions = [cachedBooks, cachedReviews, cachedTop10Books].map(condition => condition !== null);
+    if (conditions.every(condition => condition)) {
+      return res.json(JSON.parse(cachedTop10Books));
+    }
+    let books = [];
+    if (cachedBooks) {
+      books = JSON.parse(cachedBooks);
+    }else{
+      const booksQuery = 'SELECT * FROM books';
+      const booksResult = await client.execute(booksQuery);
+      books = booksResult.rows;
+      redisClient.setAsync('books', JSON.stringify(books));
+    }
 
     // Step 2: Calculate average ratings and find top 10
     const bookRatings = [];
@@ -42,7 +60,7 @@ router.get('/top10Books', async (req, res) => {
         lowestRatedReview
       };
     }));
-
+    redisClient.setAsync('top10Books', JSON.stringify(top10BooksWithReviews));
     res.status(200).json(top10BooksWithReviews);
   } catch (error) {
     console.error('Error fetching top 10 books:', error);
