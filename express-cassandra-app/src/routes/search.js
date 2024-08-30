@@ -40,3 +40,35 @@ router.get('/search', async (req, res) => {
 });
 
 module.exports = router;
+
+// router.get('/search', async (req, res) => {
+//     const { query } = req.query;
+
+//     try {
+//         let results;
+//         if (opensearchClient) {
+//             const { body } = await opensearchClient.search({
+//                 index: 'books',
+//                 body: {
+//                     query: {
+//                         multi_match: {
+//                             query,
+//                             fields: ['title', 'summary']
+//                         }
+//                     }
+//                 }
+//             });
+//             results = body.hits.hits.map(hit => hit._source);
+//         } else {
+//             const dbQuery = 'SELECT * FROM books WHERE title LIKE ? OR summary LIKE ?';
+//             const dbParams = [`%${query}%`, `%${query}%`];
+//             const dbResult = await client.execute(dbQuery, dbParams, { prepare: true });
+//             results = dbResult.rows;
+//         }
+
+//         res.status(200).json(results);
+//     } catch (error) {
+//         console.error('Error searching:', error);
+//         res.status(500).send({ error: 'Error searching: ' + error.message });
+//     }
+// });
