@@ -5,6 +5,17 @@ const bodyParser = require('body-parser');
 const app = express();
 const port = 3000;
 
+// OpenSearch
+let openSearchClient;
+
+try {
+    openSearchClient = require('./config/opensearchClient');
+    console.log('OpenSearch client connected to app.');
+} catch (error) {
+    console.error('OpenSearch client connection failed:', error);
+    openSearchClient = null;
+}
+
 app.use(bodyParser.json());
 
 // Import routes

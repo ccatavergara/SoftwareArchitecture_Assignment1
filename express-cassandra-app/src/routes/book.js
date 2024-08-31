@@ -7,9 +7,10 @@ const redisClient = require('../cacheDb');
 let openSearchClient;
 
 try {
-  openSearchClient = require('../openSearchClient');
+  openSearchClient = require('../config/opensearchClient');
+  console.log('OpenSearch client connected for books.');
 } catch (error) {
-  console.warn('OpenSearch client not available, running without search functionality');
+  console.warn('OpenSearch client not available for books, running without search functionality');
 }
 
 // GET BOOKS
