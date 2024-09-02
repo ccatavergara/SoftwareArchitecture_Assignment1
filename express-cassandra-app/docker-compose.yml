@@ -39,17 +39,18 @@ services:
     environment:
       - cluster.name=opensearch-cluster
       - node.name=opensearch-node1
-      - discovery.type=single-node
+      # - discovery.seed_hosts=opensearch-node1
+      # - cluster.initial_cluster_manager_nodes=opensearch-node1
       - bootstrap.memory_lock=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD} 
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      # - "DISABLE_SECURITY_PLUGIN=true"
+      - discovery.type=single-node
+      - plugins.security.disabled=true
     ulimits:
       memlock:
         soft: -1
         hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
     volumes:
       - opensearch-data1:/usr/share/opensearch/data
     ports:
@@ -58,10 +59,10 @@ services:
     networks:
       - mynetwork
     healthcheck:
-      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:9200/_cluster/health"]
-      interval: 60s
-      timeout: 30s
-      retries: 10
+      test: ["CMD", "curl", "-s", "http://opensearch-node1:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   web:
     build: .

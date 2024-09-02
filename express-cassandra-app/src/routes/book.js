@@ -4,14 +4,8 @@ const client = require('../db');
 const { v4: uuid } = require('uuid');
 const cassandra = require('cassandra-driver');
 const redisClient = require('../cacheDb');
-let openSearchClient;
+const openSearchClient = require('../config/opensearchClient')
 
-try {
-  openSearchClient = require('../config/opensearchClient');
-  console.log('OpenSearch client connected for books.');
-} catch (error) {
-  console.warn('OpenSearch client not available for books, running without search functionality');
-}
 
 // GET BOOKS
 router.get('/books', async (req, res) => {

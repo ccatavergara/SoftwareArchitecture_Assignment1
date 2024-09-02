@@ -1,12 +1,16 @@
 const { Client } = require('@opensearch-project/opensearch');
 
-let opensearchClient;
-try {
-    opensearchClient = new Client({ node: 'http://localhost:9200' });
-    console.log('OpenSearch client connected succesfully.');
-} catch (error) {
-    console.error('OpenSearch client connection failed', error);
-    opensearchClient = null;
+const opensearchClient = new Client({ node: 'http://opensearch-node1:9200' });
+
+async function checkOpenSearchConnection() {
+    try {
+        const health = await opensearchClient.cluster.health({});
+        console.log('OpenSearch cluster health:', health.body.status);
+    } catch (error) {
+        console.error('Error connecting to OpenSearch:', error);
+    }
 }
+
+checkOpenSearchConnection();
 
 module.exports = opensearchClient;
