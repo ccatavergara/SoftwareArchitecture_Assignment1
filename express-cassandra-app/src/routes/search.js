@@ -1,18 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const client = require('../db');
-let openSearchClient;
-
-try {
-    openSearchClient = require('../config/opensearchClient');
-    log("OpenSearch client connected for search.");
-} catch (error) {
-    console.warn('OpenSearch client not available for search, running without search functionality');
-}
+const openSearchClient = require('../config/opensearchClient');
 
 async function searchBookByDescription(description) {
     if (openSearchClient) {
-        console.log("OpenSearchClient aviable:", openSearchClient);
+        console.log("OpenSearchClient available:", openSearchClient);
         const response = await openSearchClient.search({
             index: 'books',
             body: {
@@ -29,11 +22,14 @@ async function searchBookByDescription(description) {
         const books = hits.map(hit => hit._source);
         
         const finalData = await Promise.all(books.map(async (element) => {
-            let authorId = element.author;
-            const authorQuery = 'SELECT * FROM authors WHERE id = ?';
-            const authorParams = [authorId];
-            const author = await client.execute(authorQuery, authorParams, { prepare: true });
-            element.author = author.rows[0].name;
+            if (element.author) {
+                const authorQuery = 'SELECT * FROM authors WHERE id = ?';
+                const authorParams = [element.author];
+                const author = await client.execute(authorQuery, authorParams, { prepare: true });
+                element.author = author.rows[0]?.name || 'Unknown Author';
+            } else {
+                element.author = 'Unknown Author';
+            }
             return element;
         }));
 
@@ -41,6 +37,7 @@ async function searchBookByDescription(description) {
 
     } else {
         // Fallback to Cassandra search
+        console.log("OpenSearchClient not available, falling back to Cassandra search...");
         const terms = description.split(' ');
         const query = 'SELECT * FROM books WHERE summary LIKE ?';
         const results = new Set();
@@ -54,11 +51,14 @@ async function searchBookByDescription(description) {
         const data = Array.from(results).map(JSON.parse);
 
         const finalData = await Promise.all(data.map(async (element) => {
-            let authorId = element.author;
-            const authorQuery = 'SELECT * FROM authors WHERE id = ?';
-            const authorParams = [authorId];
-            const author = await client.execute(authorQuery, authorParams, { prepare: true });
-            element.author = author.rows[0].name;
+            if (element.author) {
+                const authorQuery = 'SELECT * FROM authors WHERE id = ?';
+                const authorParams = [element.author];
+                const author = await client.execute(authorQuery, authorParams, { prepare: true });
+                element.author = author.rows[0]?.name || 'Unknown Author';
+            } else {
+                element.author = 'Unknown Author';
+            }
             return element;
         }));
         
