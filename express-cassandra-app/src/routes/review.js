@@ -3,31 +3,60 @@ const router = express.Router();
 const client = require('../db');
 const { v4: uuid } = require('uuid');
 const redisClient = require('../cacheDb');
+const openSearchClient = require('../config/opensearchClient')
 
 // GET REVIEWS
 // I DONT KNOW IF THIS LOGIC IS CORRECT
 router.get('/reviews', async (req, res) => {
   try {
-    const cachedReviews = await redisClient.getAsync('reviews');
-    const cachedBooks = await redisClient.getAsync('books');
-    if (cachedBooks && cachedReviews) {
-      console.log('Using cached reviews');
-      return res.json(JSON.parse(cachedReviews));
-    }
+    // If OpenSearch is available, use it to search reviews.
+    // if (openSearchClient) {
+    //   console.log("Using OpenSearch to search reviews");
+    //   const { reviewQuery } = req.query;
+
+    //   const response = await openSearchClient.search({
+    //     index: 'reviews',
+    //     body: {
+    //       query: {
+    //         multi_match: {
+    //           query: reviewQuery || '',
+    //           fields: ['review']
+    //         }
+    //       }
+    //     }
+    //   });
+
+    //   const hits = response.body.hits.hits;
+    //   const reviews = hits.map(hit => hit._source);
+
+    //   const bookIds = reviews.map(review => review.book);
+    //   const booksResult = await client.execute('SELECT * FROM books WHERE id IN ?', [bookIds], { prepare: true });
+    //   const booksMap = new Map(booksResult.rows.map(book => [book.id, book.name]));
+
+    //   reviews.forEach(review => {
+    //     review.bookName = booksMap.get(review.book);
+    //   });
+
+    //   return res.json(reviews);
+    // }
+
+    // If OpenSearch is not available, use Cassandra
+    console.log('OpenSearch not available, using Cassandra for reviews...');
     const result = await client.execute('SELECT * FROM reviews');
     const books = await client.execute('SELECT * FROM books');
+
     const bookReduced = books.rows.map((book) => {
       return { id: book.id, name: book.name };
     });
-    result.rows.forEach((review) => {
-      
 
+    result.rows.forEach((review) => {
       const book = bookReduced.find((book) => book.id.toString() === review.book.toString());
       review["bookName"] = book.name;
     });
-    redisClient.setAsync('reviews', JSON.stringify(result.rows));
-    res.json(result.rows);
+
+    return res.json(result.rows);
   } catch (error) {
+    console.error('Error fetching reviews:', error);
     res.status(500).json({ error: 'Error fetching reviews' });
   }
 });
@@ -35,14 +64,34 @@ router.get('/reviews', async (req, res) => {
 // CREATE REVIEW
 router.post('/reviews', async (req, res) => {
   const { book, review, score } = req.body;
+  const reviewId = uuid();
 
   try {
+    // Insert review in Cassandra
     await client.execute(
       'INSERT INTO reviews (id, book, review, score, number_of_upvotes) VALUES (?, ?, ?, ?, ?)',
-      [uuid(), book, review, parseInt(score, 10), 0],
+      [reviewId, book, review, parseInt(score, 10), 0],
       { prepare: true }
     );
-    redisClient.del('reviews');
+
+    // If OpenSearch is available, index the review
+    if (openSearchClient) {
+      console.log("Indexing review in OpenSearch");
+      await openSearchClient.index({
+        index: 'reviews',
+        id: reviewId,
+        body: {
+          id: reviewId,
+          book: book,
+          review: review,
+          score: parseInt(score, 10),
+          number_of_upvotes: 0
+        }
+      });
+    }
+
+    await redisClient.delAsync('reviews');
+
     res.status(201).json({ message: 'Review added successfully' });
   } catch (error) {
     console.error('Error adding review:', error);
@@ -50,18 +99,37 @@ router.post('/reviews', async (req, res) => {
   }
 });
 
-// UPDATE REVIEW
+// EDIT REVIEW
 router.put('/reviews/:id', async (req, res) => {
   const { id } = req.params;
   const { book, review, score } = req.body;
 
   try {
+    // Update review in Cassandra
     await client.execute(
       'UPDATE reviews SET book = ?, review = ?, score = ? WHERE id = ?',
       [book, review, parseInt(score, 10), id],
       { prepare: true }
     );
-    redisClient.del('reviews');
+
+    // If OpenSearch is available, update the review
+    if (openSearchClient) {
+      console.log("Updating review in OpenSearch");
+      await openSearchClient.update({
+        index: 'reviews',
+        id: id,
+        body: {
+          doc: {
+            book: book,
+            review: review,
+            score: parseInt(score, 10),
+          }
+        }
+      });
+    }
+
+    await redisClient.delAsync('reviews');
+
     res.json({ message: 'Review updated successfully' });
   } catch (error) {
     console.error('Error updating review:', error);
@@ -69,13 +137,26 @@ router.put('/reviews/:id', async (req, res) => {
   }
 });
 
+
 // DELETE REVIEW
 router.delete('/reviews/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Delete review in Cassandra
     await client.execute('DELETE FROM reviews WHERE id = ?', [id]);
-    redisClient.del('reviews');
+
+    // If OpenSearch is available, delete the review
+    if (openSearchClient) {
+      console.log("Deleting review from OpenSearch");
+      await openSearchClient.delete({
+        index: 'reviews',
+        id: id
+      });
+    }
+
+    await redisClient.delAsync('reviews');
+
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
     console.error('Error deleting review:', error);
@@ -83,22 +164,48 @@ router.delete('/reviews/:id', async (req, res) => {
   }
 });
 
+
 // GET SPECIFIC REVIEW
 router.get('/reviews/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    cachedReviews = await redisClient.getAsync('reviews');
+    // First, try to get the review from the cache
+    const cachedReviews = await redisClient.getAsync('reviews');
     if (cachedReviews) {
       console.log('Using cached reviews');
       const reviews = JSON.parse(cachedReviews);
       const review = reviews.find((review) => review.id === id);
-      return res.json(review);
+      if (review) {
+        return res.json(review);
+      }
     }
+
+    // If the review is not in the cache, search in OpenSearch
+    if (openSearchClient) {
+      console.log('Searching review in OpenSearch');
+      const response = await openSearchClient.get({
+        index: 'reviews',
+        id: id
+      });
+
+      if (response.body.found) {
+        return res.json(response.body._source);
+      }
+    }
+
+    // If OpenSearch is not available, search in Cassandra
     const result = await client.execute('SELECT * FROM reviews WHERE id = ?', [id]);
-    res.json(result.rowLength ? result.rows[0] : {});
+    
+    if (result.rowLength) {
+      return res.json(result.rows[0]);
+    } else {
+      return res.status(404).json({ error: 'Review not found' });
+    }
   } catch (error) {
+    console.error('Error fetching review:', error);
     res.status(500).json({ error: 'Error fetching review' });
   }
 });
+
 
 module.exports = router;
