@@ -9,55 +9,107 @@ const openSearchClient = require('../config/opensearchClient')
 // I DONT KNOW IF THIS LOGIC IS CORRECT
 router.get('/reviews', async (req, res) => {
   try {
-    // If OpenSearch is available, use it to search reviews.
-    // if (openSearchClient) {
-    //   console.log("Using OpenSearch to search reviews");
-    //   const { reviewQuery } = req.query;
+    if (openSearchClient) {
+      console.log('OpenSearch client is available');
 
-    //   const response = await openSearchClient.search({
-    //     index: 'reviews',
-    //     body: {
-    //       query: {
-    //         multi_match: {
-    //           query: reviewQuery || '',
-    //           fields: ['review']
-    //         }
-    //       }
-    //     }
-    //   });
+      // Fetch reviews from OpenSearch
+      const reviewSearchResult = await openSearchClient.search({
+        index: 'reviews',
+        body: {
+          query: {
+            match_all: {}
+          }
+        }
+      });
 
-    //   const hits = response.body.hits.hits;
-    //   const reviews = hits.map(hit => hit._source);
+      const reviews = reviewSearchResult.body.hits.hits.map(hit => ({
+        id: hit._source.id,
+        book: hit._source.book,
+        review: hit._source.review
+      }));
 
-    //   const bookIds = reviews.map(review => review.book);
-    //   const booksResult = await client.execute('SELECT * FROM books WHERE id IN ?', [bookIds], { prepare: true });
-    //   const booksMap = new Map(booksResult.rows.map(book => [book.id, book.name]));
+      console.log('Fetched reviews from OpenSearch');
 
-    //   reviews.forEach(review => {
-    //     review.bookName = booksMap.get(review.book);
-    //   });
+      // Fetch books from OpenSearch
+      const bookSearchResult = await openSearchClient.search({
+        index: 'books',
+        body: {
+          query: {
+            match_all: {}
+          }
+        }
+      });
 
-    //   return res.json(reviews);
-    // }
+      const books = bookSearchResult.body.hits.hits.map(hit => ({
+        id: hit._source.id,
+        name: hit._source.name
+      }));
 
-    // If OpenSearch is not available, use Cassandra
-    console.log('OpenSearch not available, using Cassandra for reviews...');
+      // Map book names to reviews
+      reviews.forEach(review => {
+        if (review.book) {
+          const book = books.find(book => book.id && book.id.toString() === review.book.toString());
+          review.bookName = book ? book.name : 'Unknown Book';
+        } else {
+          review.bookName = 'Unknown Book';
+        }
+      });
+
+      return res.json(reviews);
+    }
+
+    // If OpenSearch is not available, check if reviews are cached in Redis
+    const cachedReviews = await redisClient.getAsync('reviews');
+    const cachedBooks = await redisClient.getAsync('books');
+    if (cachedReviews && cachedBooks) {
+      console.log('Using cached reviews');
+      const reviews = JSON.parse(cachedReviews);
+      const books = JSON.parse(cachedBooks);
+
+      // Map book names to reviews from cache
+      reviews.forEach(review => {
+        if (review.book) {
+          const book = books.find(book => book.id && book.id.toString() === review.book.toString());
+          review.bookName = book ? book.name : 'Unknown Book';
+        } else {
+          review.bookName = 'Unknown Book';
+        }
+      });
+
+      return res.json(reviews);
+    }
+
+    // Fetch reviews from Cassandra
     const result = await client.execute('SELECT * FROM reviews');
+    console.log('Fetching reviews from database');
+
+    // Fetch books from Cassandra to map review to book names
     const books = await client.execute('SELECT * FROM books');
+    const bookReduced = books.rows.map(book => ({
+      id: book.id,
+      name: book.name
+    }));
 
-    const bookReduced = books.rows.map((book) => {
-      return { id: book.id, name: book.name };
+    // Map book names to reviews
+    result.rows.forEach(review => {
+      if (review.book) {
+        const book = bookReduced.find(book => book.id && book.id.toString() === review.book.toString());
+        review.bookName = book ? book.name : 'Unknown Book';
+      } else {
+        review.bookName = 'Unknown Book';
+      }
     });
 
-    result.rows.forEach((review) => {
-      const book = bookReduced.find((book) => book.id.toString() === review.book.toString());
-      review["bookName"] = book.name;
-    });
+    // Cache reviews and books in Redis
+    redisClient.setAsync('reviews', JSON.stringify(result.rows));
+    redisClient.setAsync('books', JSON.stringify(bookReduced));
+    console.log('Cached reviews and books');
 
-    return res.json(result.rows);
+    // Send reviews as response
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    res.status(500).json({ error: 'Error fetching reviews' });
+    res.status(500).json({ error: 'Error fetching reviews: ' + error.message });
   }
 });
 

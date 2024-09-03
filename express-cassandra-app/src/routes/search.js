@@ -5,7 +5,7 @@ const openSearchClient = require('../config/opensearchClient');
 
 async function searchBookByDescription(description) {
     if (openSearchClient) {
-        console.log("OpenSearchClient available:", openSearchClient);
+        console.log("OpenSearchClient available for search:", openSearchClient);
         const response = await openSearchClient.search({
             index: 'books',
             body: {

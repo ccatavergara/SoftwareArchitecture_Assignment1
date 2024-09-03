@@ -12,24 +12,25 @@ router.get('/books', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
-      const { q } = req.query;
-      console.log("OpenSearchClient aviable:", openSearchClient);
-      if (q) {
-        const searchResult = await openSearchClient.search({
-          index: 'books',
-          body: {
-            query: {
-              multi_match: {
-                query: q,
-                fields: ['name', 'summary']
-              }
-            }
+      console.log('OpenSearch client is available');
+      const searchResult = await openSearchClient.search({
+        index: 'books',
+        body: {
+          size: 1000,
+          query: {
+            match_all: {}
           }
-        });
-
-        const books = searchResult.hits.hits.map(hit => hit._source);
-        return res.json(books);
-      }
+        }
+      });
+      const books = searchResult.body.hits.hits.map(hit => ({
+        id: hit._source.id,
+        name: hit._source.name,
+        summary: hit._source.summary,
+        date_of_publication: hit._source.date_of_publication,
+        number_of_sales: hit._source.number_of_sales
+      }));
+      console.log("Fetched books from OpenSearch:", books);
+      return res.json(books);
     }
 
     // Check if books are cached in Redis
@@ -53,6 +54,7 @@ router.get('/books', async (req, res) => {
     res.status(500).json({ error: 'Error fetching books: ' + error.message });
   }
 });
+
 
 // CREATE BOOK
 //TODO fix this to add the author uuid
