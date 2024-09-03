@@ -25,7 +25,8 @@ router.get('/reviews', async (req, res) => {
       const reviews = reviewSearchResult.body.hits.hits.map(hit => ({
         id: hit._source.id,
         book: hit._source.book,
-        review: hit._source.review
+        review: hit._source.review,
+        score: hit._source.score
       }));
 
       console.log('Fetched reviews from OpenSearch');
@@ -34,6 +35,7 @@ router.get('/reviews', async (req, res) => {
       const bookSearchResult = await openSearchClient.search({
         index: 'books',
         body: {
+          size: 10000,
           query: {
             match_all: {}
           }
@@ -45,14 +47,16 @@ router.get('/reviews', async (req, res) => {
         name: hit._source.name
       }));
 
-      // Map book names to reviews
+      console.log("Sample book", books[0]);
+      console.log("Sample review", reviews[0]);
+      console.log(books[0].id);
+      console.log(books[0].name);
+      console.log(reviews[0].book);
+
+      // Map book ids to reviews
       reviews.forEach(review => {
-        if (review.book) {
-          const book = books.find(book => book.id && book.id.toString() === review.book.toString());
-          review.bookName = book ? book.name : 'Unknown Book';
-        } else {
-          review.bookName = 'Unknown Book';
-        }
+        const book = books.find(book => book.id && book.id.toString() === review.book.toString());
+        review.bookName = book ? book.name : 'Unknown Book';
       });
 
       return res.json(reviews);

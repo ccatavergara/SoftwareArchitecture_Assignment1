@@ -11,8 +11,8 @@ async function loadBooksToOpenSearch() {
         for (const book of books) {
             await openSearchClient.index({
                 index: 'books',
-                id: book.id.toString(),
                 body: {
+                id: book.id,
                 name: book.name,
                 summary: book.summary,
                 date_of_publication: book.date_of_publication,
