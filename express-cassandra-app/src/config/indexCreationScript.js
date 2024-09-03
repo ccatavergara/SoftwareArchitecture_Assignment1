@@ -19,7 +19,7 @@ async function ensureIndexExists(indexName, mapping) {
     }
 };
 
-// Mappings for `books` and `reviews`
+// Mappings
 const bookMapping = {
     properties: {
         id: { type: 'keyword' },
@@ -40,9 +40,30 @@ const reviewMapping = {
     }
 };
 
+const authorMapping = {
+    properties: {
+        id: { type: 'keyword' },
+        name: { type: 'text' },
+        date_of_birth: { type: 'date' },
+        country_of_origin: { type: 'text' },
+        short_description: { type: 'text' }
+    }
+};
+
+const salesByYearMapping = {
+    properties: {
+        id: { type: 'keyword' },
+        book: { type: 'keyword' },
+        year: { type: 'integer' },
+        sales: { type: 'integer' }
+    }
+};
+
 async function createIndices() {
     await ensureIndexExists('books', bookMapping);
     await ensureIndexExists('reviews', reviewMapping);
+    await ensureIndexExists('authors', authorMapping);
+    await ensureIndexExists('sales_by_year', salesByYearMapping);
 };
 
 module.exports = createIndices;

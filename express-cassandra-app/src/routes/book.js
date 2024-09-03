@@ -16,7 +16,7 @@ router.get('/books', async (req, res) => {
       const searchResult = await openSearchClient.search({
         index: 'books',
         body: {
-          size: 1000,
+          size: 10000,
           query: {
             match_all: {}
           }
@@ -173,7 +173,7 @@ router.get('/books/:id', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      console.log("OpenSearchClient available:", openSearchClient);
       const searchResult = await openSearchClient.search({
         index: 'books',
         body: {
@@ -185,9 +185,10 @@ router.get('/books/:id', async (req, res) => {
         }
       });
 
-      if (searchResult.hits.total.value > 0) {
+      // Ensure searchResult is in expected format
+      if (searchResult.body.hits && searchResult.body.hits.total && searchResult.body.hits.total.value > 0) {
         console.log('Using OpenSearch book');
-        return res.json(searchResult.hits.hits[0]._source);
+        return res.json(searchResult.body.hits.hits[0]._source);
       }
     }
 

@@ -3,19 +3,52 @@ const router = express.Router();
 const { v4: uuid } = require('uuid');
 const client = require('../db');
 const redisClient = require('../cacheDb');
+const openSearchClient = require('../config/opensearchClient');
 
 // GET AUTHORS
 router.get('/authors', async (req, res) => {
   try {
+    // If OpenSearch is available, use it to fetch authors
+    if (openSearchClient) {
+      console.log('OpenSearch client is available');
+      
+      const searchResult = await openSearchClient.search({
+        index: 'authors',
+        body: {
+          size: 10000,
+          query: {
+            match_all: {}
+          }
+        }
+      });
+
+      const authors = searchResult.body.hits.hits.map(hit => ({
+        id: hit._source.id,
+        name: hit._source.name,
+        date_of_birth: hit._source.date_of_birth,
+        country_of_origin: hit._source.country_of_origin,
+        short_description: hit._source.short_description
+      }));
+      
+      console.log('Fetched authors from OpenSearch');
+      return res.json(authors);
+    }
+
+    // If OpenSearch is not available, check if authors are in cache
     const cachedAuthors = await redisClient.getAsync('authors');
     if (cachedAuthors) {
       console.log("Using cached authors");
       return res.json(JSON.parse(cachedAuthors));
     }
+
+    // If authors are not in cache, fetch them from the database
     const result = await client.execute('SELECT * FROM authors');
     console.log('Fetching authors from database');
-    redisClient.setAsync('authors', JSON.stringify(result.rows));
+
+    // Store authors in cache
+    await redisClient.setAsync('authors', JSON.stringify(result.rows));
     console.log('Cached authors');
+
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching authors:', error);
@@ -26,17 +59,37 @@ router.get('/authors', async (req, res) => {
 // CREATE AUTHOR
 router.post('/authors', async (req, res) => {
   const { name, date_of_birth, country_of_origin, short_description } = req.body;
-
   const birthdate = new Date(date_of_birth).toISOString().split('T')[0]; // Format YYYY-MM-DD
+  const id = uuid(); // Generate a new UUID for the author
 
   try {
+    // Insert author into the database
     await client.execute(
       'INSERT INTO authors (id, name, date_of_birth, country_of_origin, short_description) VALUES (?, ?, ?, ?, ?)',
-      [uuid(), name, birthdate, country_of_origin, short_description],
+      [id, name, birthdate, country_of_origin, short_description],
       { prepare: true }
     );
+    
+    // Index the new author in OpenSearch
+    if (openSearchClient) {
+      await openSearchClient.index({
+        index: 'authors',
+        id: id,
+        body: {
+          id: id,
+          name: name,
+          date_of_birth: birthdate,
+          country_of_origin: country_of_origin,
+          short_description: short_description
+        }
+      });
+      console.log('Indexed author in OpenSearch');
+    }
+
+    // Clear cached authors
     redisClient.del('authors');
     console.log('Deleted cached authors');
+
     res.status(201).json({ message: 'Author added successfully' });
   } catch (error) {
     console.error('Error adding author:', error);
@@ -48,15 +101,32 @@ router.post('/authors', async (req, res) => {
 router.put('/authors/:id', async (req, res) => {
   const { id } = req.params;
   const { name, date_of_birth, country_of_origin, short_description } = req.body;
-
   const birthdate = new Date(date_of_birth).toISOString().split('T')[0];
 
   try {
+    // Update author in the database
     await client.execute(
       'UPDATE authors SET name = ?, date_of_birth = ?, country_of_origin = ?, short_description = ? WHERE id = ?',
       [name, birthdate, country_of_origin, short_description, id],
       { prepare: true }
     );
+    
+    // Update the author in OpenSearch
+    if (openSearchClient) {
+      await openSearchClient.index({
+        index: 'authors',
+        id: id,
+        body: {
+          name: name,
+          date_of_birth: birthdate,
+          country_of_origin: country_of_origin,
+          short_description: short_description
+        }
+      });
+      console.log('Updated author in OpenSearch');
+    }
+
+    // Clear cached authors
     redisClient.del('authors');
     res.json({ message: 'Author updated successfully' });
   } catch (error) {
@@ -70,8 +140,35 @@ router.delete('/authors/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Delete the author from the database
     await client.execute('DELETE FROM authors WHERE id = ?', [id], { prepare: true });
+
+    // Remove the author from Redis cache
     redisClient.del('authors');
+    console.log('Deleted cached authors');
+
+    // If OpenSearch is available, delete the author from OpenSearch
+    if (openSearchClient) {
+      try {
+        const deleteResult = await openSearchClient.delete({
+          index: 'authors',
+          id: id
+        });
+
+        if (deleteResult.body.result === 'not_found') {
+          console.log(`Author with ID ${id} not found in OpenSearch`);
+        } else {
+          console.log(`Deleted author with ID ${id} from OpenSearch`);
+        }
+      } catch (osError) {
+        if (osError.meta.statusCode === 404) {
+          console.log(`Author with ID ${id} not found in OpenSearch`);
+        } else {
+          throw osError;
+        }
+      }
+    }
+
     res.json({ message: 'Author deleted successfully' });
   } catch (error) {
     console.error('Error deleting author:', error);
@@ -82,8 +179,30 @@ router.delete('/authors/:id', async (req, res) => {
 // SPECIFIC AUTHOR
 router.get('/authors/:id', async (req, res) => {
   const { id } = req.params;
+  
   try {
-    cachedAuthors = await redisClient.getAsync('authors');
+    // If OpenSearch is available, use it to fetch the author
+    if (openSearchClient) {
+      try {
+        const searchResult = await openSearchClient.get({
+          index: 'authors',
+          id: id
+        });
+        
+        // Return the author if found in OpenSearch
+        return res.json(searchResult.body._source);
+      } catch (error) {
+        // If the author is not found in OpenSearch, continue to check the database
+        if (error.meta.statusCode === 404) {
+          console.log('Author not found in OpenSearch, checking database...');
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
+    }
+    
+    // If OpenSearch is not available or the author is not found, check the cache
+    const cachedAuthors = await redisClient.getAsync('authors');
     if (cachedAuthors) {
       console.log("Using cached authors");
       const author = JSON.parse(cachedAuthors).find((author) => author.id === id);
@@ -91,10 +210,15 @@ router.get('/authors/:id', async (req, res) => {
         return res.json(author);
       }
     }
+    
+    // If author is not in cache, fetch from the database
     const result = await client.execute('SELECT * FROM authors WHERE id = ?', [id]);
     if (result.rowLength === 0) {
       res.status(404).json({ error: 'Author not found' });
     } else {
+      // Optionally, cache the result
+      redisClient.setAsync('authors', JSON.stringify(result.rows));
+      console.log('Cached authors');
       res.json(result.rows[0]);
     }
   } catch (error) {
