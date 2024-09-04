@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+    
+  cassandra:
+    image: cassandra:3.11
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /docker-entrypoint.sh cassandra -f &
+        sleep 30
+        cqlsh -e "CREATE KEYSPACE IF NOT EXISTS book_app WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
+        wait
+
+  web:
+    build: .
+    container_name: express-cassandra-app-web
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      opensearch-node1:
+        condition: service_healthy
+    networks:
+      - mynetwork
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./public/images:/usr/src/app/public/images
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+
+volumes:
+  opensearch-data1:
+
+networks:
+  mynetwork:
+    driver: bridge

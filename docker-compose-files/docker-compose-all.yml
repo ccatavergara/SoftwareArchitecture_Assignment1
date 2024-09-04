@@ -1,0 +1,101 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    
+  cassandra:
+    image: cassandra:3.11
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /docker-entrypoint.sh cassandra -f &
+        sleep 30
+        cqlsh -e "CREATE KEYSPACE IF NOT EXISTS book_app WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
+        wait
+
+  opensearch-node1:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch-node1
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch-data1:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build: .
+    container_name: express-cassandra-app-web
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      opensearch-node1:
+        condition: service_healthy
+    networks:
+      - mynetwork
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./public/images:/usr/src/app/public/images
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-reverse-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public/images:/usr/share/nginx/images:ro
+    depends_on:
+      - web
+    networks:
+      - mynetwork
+
+volumes:
+  opensearch-data1:
+
+networks:
+  mynetwork:
+    driver: bridge
