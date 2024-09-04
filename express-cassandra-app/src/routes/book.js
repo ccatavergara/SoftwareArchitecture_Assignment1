@@ -5,13 +5,30 @@ const { v4: uuid } = require('uuid');
 const cassandra = require('cassandra-driver');
 const redisClient = require('../cacheDb');
 const openSearchClient = require('../config/opensearchClient')
+const multer = require('multer');
+const path = require('path');
+require('dotenv').config();
+const USE_PROXY = process.env.USE_PROXY === 'true';
 
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '..','..','public', 'images')); // Use absolute path
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
 
 // GET BOOKS
 router.get('/books', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
+
       console.log('OpenSearch client is available');
       const searchResult = await openSearchClient.search({
         index: 'books',
@@ -45,8 +62,14 @@ router.get('/books', async (req, res) => {
     console.log('Fetching books from database');
 
     // Save books in Redis
-    redisClient.setAsync('books', JSON.stringify(result.rows));
     console.log('Cached books');
+    if (USE_PROXY) {
+      result.rows.forEach(book => {
+        book.cover_image_path = '/images/' + book.cover_image_path;
+        console.log(book.cover_image_path);
+      });
+  } 
+    redisClient.setAsync('books', JSON.stringify(result.rows));
 
     res.json(result.rows);
   } catch (error) {
@@ -58,8 +81,17 @@ router.get('/books', async (req, res) => {
 
 // CREATE BOOK
 //TODO fix this to add the author uuid
-router.post('/books', async (req, res) => {
+router.post('/books', upload.single('book_cover'), async (req, res) => {
   const { name, summary, date_of_publication, number_of_sales } = req.body;
+  console.log("HOLAAA");
+  console.log(storage);
+  console.log('Received file:', req.file);
+  console.log('Received body:', req.body);
+  let coverFilename = null;
+  if (req.file) {
+    coverFilename = req.file.filename;
+  }
+  console.log('coverFilename:', coverFilename);
 
   try {
     const publicationDate = cassandra.types.LocalDate.fromDate(new Date(date_of_publication));
@@ -67,8 +99,8 @@ router.post('/books', async (req, res) => {
 
     // Insert book in Cassandra
     await client.execute(
-      'INSERT INTO books (id, name, summary, date_of_publication, number_of_sales) VALUES (?, ?, ?, ?, ?)',
-      [bookId, name, summary, publicationDate, parseInt(number_of_sales, 10)],
+      'INSERT INTO books (id, name, summary, date_of_publication, number_of_sales, cover_image_path) VALUES (?, ?, ?, ?, ?,?)',
+      [bookId, name, summary, publicationDate, parseInt(number_of_sales, 10), coverFilename],
       { prepare: true }
     );
 
@@ -77,7 +109,6 @@ router.post('/books', async (req, res) => {
 
     // If OpenSearch is aviable, also insert the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
       await openSearchClient.index({
         index: 'books',
         id: bookId,
@@ -85,7 +116,8 @@ router.post('/books', async (req, res) => {
           name,
           summary,
           date_of_publication: publicationDate,
-          number_of_sales: parseInt(number_of_sales, 10)
+          number_of_sales: parseInt(number_of_sales, 10),
+          cover_image_path: coverFilename
         }
       });
     }
@@ -117,7 +149,7 @@ router.put('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also update the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       await openSearchClient.update({
         index: 'books',
         id: id,
@@ -152,7 +184,7 @@ router.delete('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also delete the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       await openSearchClient.delete({
         index: 'books',
         id: id
@@ -173,6 +205,7 @@ router.get('/books/:id', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
+
       console.log("OpenSearchClient available:", openSearchClient);
       const searchResult = await openSearchClient.search({
         index: 'books',

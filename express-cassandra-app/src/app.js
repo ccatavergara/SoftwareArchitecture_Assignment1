@@ -77,6 +77,7 @@ app.use('/api', top50Books);
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../public/images')));
 
 // Root
 app.get('/', (req, res) => {
