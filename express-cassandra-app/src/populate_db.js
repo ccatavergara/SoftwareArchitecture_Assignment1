@@ -41,8 +41,8 @@ const createAuthor = async (id,name, dateOfBirth, countryOfOrigin, shortDescript
 
 
 const createBook = async (id, authorId, name, summary, dateOfPublication, numberOfSales) => {
-    const query = 'INSERT INTO books (id, author, name, summary, date_of_publication, number_of_sales) VALUES (?, ?, ?, ?, ?, ?)';
-    await executeCqlCommand(query, [id, authorId, name, summary, dateOfPublication, numberOfSales]);
+    const query = 'INSERT INTO books (id, author, name, summary, date_of_publication, number_of_sales, cover_image_path) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    await executeCqlCommand(query, [id, authorId, name, summary, dateOfPublication, numberOfSales, '']);
   };
 
 

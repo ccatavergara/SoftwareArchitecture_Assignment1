@@ -4,23 +4,35 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('book-form').addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
-        const data = Object.fromEntries(formData.entries());
-
-        if (data.date_of_publication) {
-            data.date_of_publication = new Date(data.date_of_publication).toISOString().split('T')[0];
+    
+        // Handle date formatting
+        if (formData.get('date_of_publication')) {
+            const formattedDate = new Date(formData.get('date_of_publication')).toISOString().split('T')[0];
+            formData.set('date_of_publication', formattedDate);
         }
-
-        const response = await fetch('/api/books', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-            alert('Book added successfully!');
-            window.location.reload();
-        } else {
-            alert('Error adding book');
+    
+        console.log('Form data before sending:', Object.fromEntries(formData));
+    
+        try {
+            const response = await fetch('/api/books', {
+                method: 'POST',
+                body: formData  // Send formData directly, don't stringify
+                // Remove the 'Content-Type' header, let the browser set it with the boundary
+            });
+    
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Server response:', result);
+                alert('Book added successfully!');
+                window.location.reload();
+            } else {
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                alert(`Error adding book: ${errorData.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('Error adding book: ' + error.message);
         }
     });
 
@@ -55,16 +67,24 @@ async function fetchBooks() {
         const booksList = document.getElementById('books-list');
         booksList.innerHTML = '';
         books.forEach(book => {
+            if (book.name == "CARO"){
+                console.log(book);
+            }
             const listItem = document.createElement('tr');
             listItem.innerHTML = `
-            
+                <td>
+                    ${book.cover_image_path && book.cover_image_path.trim() !== ''
+                        ? `<img src="${book.cover_image_path}" alt="Cover of ${book.name}" style="width: 50px; height: auto;">`
+                        : `<div style="width: 50px; height: 50px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #666;">No Cover</div>`
+                    }
+                </td>
                 <td>${book.name}</td>
                 <td>${book.summary}</td>
                 <td>${book.date_of_publication}</td>
                 <td>${book.number_of_sales}</td>
                 <td><button onclick="editBook('${book.id}')">Edit</button></td>
                 <td><button onclick="deleteBook('${book.id}')">Delete</button></td>
-                        `;
+            `;
             booksList.appendChild(listItem);
         });
     } catch (error) {

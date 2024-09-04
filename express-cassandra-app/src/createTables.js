@@ -19,6 +19,7 @@ const createTables = async () => {
       summary TEXT,
       date_of_publication DATE,
       number_of_sales INT,
+      cover_image_path TEXT
 );
   `;
 
