@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchBooks();
 
@@ -67,7 +68,7 @@ async function fetchBooks() {
         const booksList = document.getElementById('books-list');
         booksList.innerHTML = '';
         books.forEach(book => {
-            if (book.name == "CARO"){
+            if (book.name == "test"){
                 console.log(book);
             }
             const listItem = document.createElement('tr');

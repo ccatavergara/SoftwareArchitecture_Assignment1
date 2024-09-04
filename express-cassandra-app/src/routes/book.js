@@ -7,11 +7,13 @@ const redisClient = require('../cacheDb');
 const openSearchClient = require('../config/opensearchClient')
 const multer = require('multer');
 const path = require('path');
+require('dotenv').config();
+const USE_PROXY = process.env.USE_PROXY === 'true';
 
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/images/'); // Make sure this directory exists
+    cb(null, path.join(__dirname, '..','..','public', 'images')); // Use absolute path
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -19,9 +21,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
-
-
+const upload = multer({ storage });
 
 // GET BOOKS
 router.get('/books', async (req, res) => {
@@ -29,7 +29,7 @@ router.get('/books', async (req, res) => {
     // Search in OpenSearch if available
     if (openSearchClient) {
       const { q } = req.query;
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       if (q) {
         const searchResult = await openSearchClient.search({
           index: 'books',
@@ -60,8 +60,14 @@ router.get('/books', async (req, res) => {
     console.log('Fetching books from database');
 
     // Save books in Redis
-    redisClient.setAsync('books', JSON.stringify(result.rows));
     console.log('Cached books');
+    if (USE_PROXY) {
+      result.rows.forEach(book => {
+        book.cover_image_path = '/images/' + book.cover_image_path;
+        console.log(book.cover_image_path);
+      });
+  } 
+    redisClient.setAsync('books', JSON.stringify(result.rows));
 
     res.json(result.rows);
   } catch (error) {
@@ -74,7 +80,8 @@ router.get('/books', async (req, res) => {
 //TODO fix this to add the author uuid
 router.post('/books', upload.single('book_cover'), async (req, res) => {
   const { name, summary, date_of_publication, number_of_sales } = req.body;
-    
+  console.log("HOLAAA");
+  console.log(storage);
   console.log('Received file:', req.file);
   console.log('Received body:', req.body);
   let coverFilename = null;
@@ -99,7 +106,6 @@ router.post('/books', upload.single('book_cover'), async (req, res) => {
 
     // If OpenSearch is aviable, also insert the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
       await openSearchClient.index({
         index: 'books',
         id: bookId,
@@ -140,7 +146,7 @@ router.put('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also update the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       await openSearchClient.update({
         index: 'books',
         id: id,
@@ -175,7 +181,7 @@ router.delete('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also delete the book in OpenSearch
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       await openSearchClient.delete({
         index: 'books',
         id: id
@@ -196,7 +202,7 @@ router.get('/books/:id', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
-      console.log("OpenSearchClient aviable:", openSearchClient);
+      
       const searchResult = await openSearchClient.search({
         index: 'books',
         body: {
