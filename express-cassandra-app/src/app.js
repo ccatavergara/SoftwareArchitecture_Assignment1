@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const createIndices = require('./config/indexCreationScript');
+const loadDataToOpenSearch = require('./config/loadDataToOpenSearch');
 
 const app = express();
 const port = 3000;
@@ -10,21 +11,47 @@ const port = 3000;
 let openSearchClient;
 
 try {
-    openSearchClient = require('./config/opensearchClient');
-    console.log('OpenSearch client connected to app.');
+  openSearchClient = require('./config/opensearchClient');
+  console.log('OpenSearch client connected to app.');
 } catch (error) {
-    console.error('OpenSearch client connection failed:', error);
-    openSearchClient = null;
+  console.error('OpenSearch client connection failed:', error);
+  openSearchClient = null;
 }
 
-// createIndices().then(() => {
-//   console.log('Indices ensured, starting server...');
-//   app.listen(3000, () => {
-//     console.log('Server is running on port 3000');
-//   });
-// }).catch((err) => {
-//   console.error('Failed to ensure indices:', err);
-// });
+const startServer = () => {
+  app.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}`);
+  });
+};
+
+if (openSearchClient) {
+  openSearchClient.ping().then(() => {
+    console.log('OpenSearch is available, proceeding with index creation and data load.');
+
+    createIndices().then(() => {
+      console.log('Indices ensured, starting server...');
+
+      loadDataToOpenSearch().then(() => {
+        console.log('Server is ready with OpenSearch data loaded');
+        startServer();  // Start server after loading OpenSearch data
+      }).catch((err) => {
+        console.error('Failed to load data into OpenSearch:', err);
+        startServer();  // Start server even if loading OpenSearch data fails
+      });
+
+    }).catch((err) => {
+      console.error('Failed to ensure indices:', err);
+      startServer();  // Start server even if creating indices fails
+    });
+
+  }).catch((err) => {
+    console.error('OpenSearch is not available:', err);
+    startServer();  // Start server without OpenSearch integration
+  });
+} else {
+  console.error('OpenSearch client is not initialized. Starting server without OpenSearch...');
+  startServer();
+}
 
 app.use(bodyParser.json());
 
@@ -48,7 +75,6 @@ app.use('/api', top10Books);
 app.use('/api', search);
 app.use('/api', top50Books);
 
-
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.static(path.join(__dirname, '../public/images')));
@@ -56,8 +82,4 @@ app.use(express.static(path.join(__dirname, '../public/images')));
 // Root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
 });

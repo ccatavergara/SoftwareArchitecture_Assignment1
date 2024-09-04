@@ -28,24 +28,26 @@ router.get('/books', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
-      const { q } = req.query;
-      
-      if (q) {
-        const searchResult = await openSearchClient.search({
-          index: 'books',
-          body: {
-            query: {
-              multi_match: {
-                query: q,
-                fields: ['name', 'summary']
-              }
-            }
-          }
-        });
 
-        const books = searchResult.hits.hits.map(hit => hit._source);
-        return res.json(books);
-      }
+      console.log('OpenSearch client is available');
+      const searchResult = await openSearchClient.search({
+        index: 'books',
+        body: {
+          size: 10000,
+          query: {
+            match_all: {}
+          }
+        }
+      });
+      const books = searchResult.body.hits.hits.map(hit => ({
+        id: hit._source.id,
+        name: hit._source.name,
+        summary: hit._source.summary,
+        date_of_publication: hit._source.date_of_publication,
+        number_of_sales: hit._source.number_of_sales
+      }));
+      console.log("Fetched books from OpenSearch:", books);
+      return res.json(books);
     }
 
     // Check if books are cached in Redis
@@ -75,6 +77,7 @@ router.get('/books', async (req, res) => {
     res.status(500).json({ error: 'Error fetching books: ' + error.message });
   }
 });
+
 
 // CREATE BOOK
 //TODO fix this to add the author uuid
@@ -202,7 +205,8 @@ router.get('/books/:id', async (req, res) => {
   try {
     // Search in OpenSearch if available
     if (openSearchClient) {
-      
+
+      console.log("OpenSearchClient available:", openSearchClient);
       const searchResult = await openSearchClient.search({
         index: 'books',
         body: {
@@ -214,9 +218,10 @@ router.get('/books/:id', async (req, res) => {
         }
       });
 
-      if (searchResult.hits.total.value > 0) {
+      // Ensure searchResult is in expected format
+      if (searchResult.body.hits && searchResult.body.hits.total && searchResult.body.hits.total.value > 0) {
         console.log('Using OpenSearch book');
-        return res.json(searchResult.hits.hits[0]._source);
+        return res.json(searchResult.body.hits.hits[0]._source);
       }
     }
 
