@@ -9,54 +9,7 @@ const openSearchClient = require('../config/opensearchClient')
 // I DONT KNOW IF THIS LOGIC IS CORRECT
 router.get('/reviews', async (req, res) => {
   try {
-    if (openSearchClient) {
-      console.log('OpenSearch client is available');
-
-      // Fetch reviews from OpenSearch
-      const reviewSearchResult = await openSearchClient.search({
-        index: 'reviews',
-        body: {
-          size: 10000,
-          query: {
-            match_all: {}
-          }
-        }
-      });
-
-      const reviews = reviewSearchResult.body.hits.hits.map(hit => ({
-        id: hit._source.id,
-        book: hit._source.book,
-        review: hit._source.review,
-        score: hit._source.score
-      }));
-
-      console.log('Fetched reviews from OpenSearch');
-
-      // Fetch books from OpenSearch
-      const bookSearchResult = await openSearchClient.search({
-        index: 'books',
-        body: {
-          size: 10000,
-          query: {
-            match_all: {}
-          }
-        }
-      });
-
-      const books = bookSearchResult.body.hits.hits.map(hit => ({
-        id: hit._source.id,
-        name: hit._source.name
-      }));
-
-      // Map book ids to reviews
-      reviews.forEach(review => {
-        const book = books.find(book => book.id && book.id.toString() === review.book.toString());
-        review.bookName = book ? book.name : 'Unknown Book';
-      });
-
-      return res.json(reviews);
-    }
-
+    
     // If OpenSearch is not available, check if reviews are cached in Redis
     const cachedReviews = await redisClient.getAsync('reviews');
     const cachedBooks = await redisClient.getAsync('books');
@@ -115,6 +68,7 @@ router.get('/reviews', async (req, res) => {
 // CREATE REVIEW
 router.post('/reviews', async (req, res) => {
   const { book, review, score } = req.body;
+  console.log('Creating review:', book, review, score);
   const reviewId = uuid();
 
   try {
@@ -161,6 +115,7 @@ router.post('/reviews', async (req, res) => {
 router.put('/reviews/:id', async (req, res) => {
   const { id } = req.params;
   const { book, review, score } = req.body;
+  
 
   try {
     // Update review in Cassandra
@@ -186,7 +141,7 @@ router.put('/reviews/:id', async (req, res) => {
       });
     }
 
-    await redisClient.delAsync('reviews');
+    await redisClient.del('reviews');
 
     res.json({ message: 'Review updated successfully' });
   } catch (error) {
@@ -213,7 +168,7 @@ router.delete('/reviews/:id', async (req, res) => {
       });
     }
 
-    await redisClient.delAsync('reviews');
+    await redisClient.del('reviews');
 
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
@@ -238,18 +193,7 @@ router.get('/reviews/:id', async (req, res) => {
       }
     }
 
-    // If the review is not in the cache, search in OpenSearch
-    if (openSearchClient) {
-      console.log('Searching review in OpenSearch');
-      const response = await openSearchClient.get({
-        index: 'reviews',
-        id: id
-      });
-
-      if (response.body.found) {
-        return res.json(response.body._source);
-      }
-    }
+ 
 
     // If OpenSearch is not available, search in Cassandra
     const result = await client.execute('SELECT * FROM reviews WHERE id = ?', [id]);

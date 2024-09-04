@@ -61,7 +61,7 @@ router.get('/top50Books', async (req, res) => {
     const cachedSales = await redisClient.getAsync('salesByYear');
     const cachedBooks = await redisClient.getAsync('books');
     conditions = [cachedTopBooks, cachedSales, cachedBooks].map(condition => condition !== null);
-    if (conditions.every(condition => condition)) {
+    if (conditions.every(condition => condition) && cachedTopBooks) {
       return res.status(200).send({books: JSON.parse(cachedTopBooks)});
     }
     const books = await getTop50Books();

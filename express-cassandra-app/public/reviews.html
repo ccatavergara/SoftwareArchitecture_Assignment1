@@ -130,9 +130,11 @@
         // Edit review
         async function editReview(reviewId) {
             try {
+                console.log(reviewId);
                 const response = await fetch(`/api/reviews/${reviewId}`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const review = await response.json();
+                console.log(review);
                 showEditReviewForm(review);
             } catch (error) {
                 console.error('Error fetching review for edit:', error);
@@ -185,6 +187,7 @@
             event.preventDefault();
             const formData = new FormData(event.target);
             const data = Object.fromEntries(formData.entries());
+            console.log("Esto es el submit", data);
 
             const response = await fetch(`/api/reviews/${data.id}`, {
                 method: 'PUT',

@@ -5,6 +5,7 @@ async function fetchTop10Books() {
         throw new Error('Network response was not ok');
       }
       const top10Books = await response.json();
+      console.log(top10Books);
       const booksList = document.getElementById('books-list');
       booksList.innerHTML = top10Books.map(book => `
         <tr>

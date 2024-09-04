@@ -8,32 +8,7 @@ const openSearchClient = require('../config/opensearchClient');
 // GET AUTHORS
 router.get('/authors', async (req, res) => {
   try {
-    // If OpenSearch is available, use it to fetch authors
-    if (openSearchClient) {
-      console.log('OpenSearch client is available');
-      
-      const searchResult = await openSearchClient.search({
-        index: 'authors',
-        body: {
-          size: 10000,
-          query: {
-            match_all: {}
-          }
-        }
-      });
-
-      const authors = searchResult.body.hits.hits.map(hit => ({
-        id: hit._source.id,
-        name: hit._source.name,
-        date_of_birth: hit._source.date_of_birth,
-        country_of_origin: hit._source.country_of_origin,
-        short_description: hit._source.short_description
-      }));
-      
-      console.log('Fetched authors from OpenSearch');
-      return res.json(authors);
-    }
-
+  
     // If OpenSearch is not available, check if authors are in cache
     const cachedAuthors = await redisClient.getAsync('authors');
     if (cachedAuthors) {
@@ -138,7 +113,7 @@ router.put('/authors/:id', async (req, res) => {
 // DELETE AUTHOR
 router.delete('/authors/:id', async (req, res) => {
   const { id } = req.params;
-
+  console.log(id);
   try {
     // Delete the author from the database
     await client.execute('DELETE FROM authors WHERE id = ?', [id], { prepare: true });

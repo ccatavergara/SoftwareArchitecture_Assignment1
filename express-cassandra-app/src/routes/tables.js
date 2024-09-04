@@ -14,8 +14,7 @@ router.get('/tables', async (req, res) => {
         const cachedAuthorInfo = await redisClient.getAsync('authorInfoTable');
         conditions = [cachedAuthors, cachedBooks, cachedReviews, cachedSales, cachedAuthorInfo];
         conditions = conditions.map(condition => condition !== null);
-        console.log(conditions)
-        if (conditions.every(condition => condition)) {
+        if (conditions.every(condition => condition) && cachedAuthorInfo) {
             console.log('Using cached data');
             return res.json(JSON.parse(cachedAuthorInfo));
         }
@@ -24,7 +23,6 @@ router.get('/tables', async (req, res) => {
         let reviews = [];
         let sales = [];
         if (cachedAuthors) {
-            console.log('Using cached authors');
             authors = JSON.parse(cachedAuthors);
         }
         else {
@@ -33,7 +31,6 @@ router.get('/tables', async (req, res) => {
             redisClient.setAsync('authors', JSON.stringify(authors));
         }
         if (cachedBooks) {
-            console.log('Using cached books');
             books = JSON.parse(cachedBooks);
         }
         else {
@@ -43,7 +40,6 @@ router.get('/tables', async (req, res) => {
         }
         
         if (cachedReviews) {
-            console.log('Using cached reviews');
             reviews = JSON.parse(cachedReviews);
         }
         else {
@@ -53,7 +49,6 @@ router.get('/tables', async (req, res) => {
         }
 
         if (cachedSales) {
-            console.log('Using cached sales');
             sales = JSON.parse(cachedSales);
         }
         else {
@@ -61,7 +56,6 @@ router.get('/tables', async (req, res) => {
             sales = salesResult.rows;
             redisClient.setAsync('salesByYear', JSON.stringify(sales));
         }
-
 
         const authorData = authors.map(author => {
             const authorBooks = books.filter(book => book.author === author.id);
@@ -86,6 +80,7 @@ router.get('/tables', async (req, res) => {
         });
 
         redisClient.setAsync('authorInfoTable', JSON.stringify(authorData));
+        console.log(authorData);
         res.json(authorData);
     } catch (error) {
         console.error('Error fetching information:', error);

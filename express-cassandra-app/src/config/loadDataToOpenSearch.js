@@ -17,7 +17,8 @@ async function loadBooksToOpenSearch() {
                 name: book.name,
                 summary: book.summary,
                 date_of_publication: book.date_of_publication,
-                number_of_sales: book.number_of_sales
+                number_of_sales: book.number_of_sales,
+                cover_image_path : book.cover_image_path
                 }
             });
         }
@@ -41,7 +42,8 @@ async function loadReviewsToOpenSearch() {
                 book: review.book,
                 review: review.review,
                 score: review.score,
-                number_of_upvotes: review.number_of_upvotes
+                number_of_upvotes: review.number_of_upvotes,
+                
                 }
             });
         }

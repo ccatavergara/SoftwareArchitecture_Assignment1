@@ -27,29 +27,7 @@ const upload = multer({ storage });
 router.get('/books', async (req, res) => {
   try {
     // Search in OpenSearch if available
-    if (openSearchClient) {
-
-      console.log('OpenSearch client is available');
-      const searchResult = await openSearchClient.search({
-        index: 'books',
-        body: {
-          size: 10000,
-          query: {
-            match_all: {}
-          }
-        }
-      });
-      const books = searchResult.body.hits.hits.map(hit => ({
-        id: hit._source.id,
-        name: hit._source.name,
-        summary: hit._source.summary,
-        date_of_publication: hit._source.date_of_publication,
-        number_of_sales: hit._source.number_of_sales
-      }));
-      console.log("Fetched books from OpenSearch:", books);
-      return res.json(books);
-    }
-
+    
     // Check if books are cached in Redis
     const cachedBooks = await redisClient.getAsync('books');
     if (cachedBooks) {
