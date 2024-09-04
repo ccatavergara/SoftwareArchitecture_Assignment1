@@ -106,8 +106,8 @@ async function loadDataToOpenSearch() {
         const pingResponse = await openSearchClient.ping();
         if (pingResponse) {
             console.log('OpenSearch is available. Loading data...');
-            await loadBooksToOpenSearch();
-            // await loadReviewsToOpenSearch();
+            // await loadBooksToOpenSearch();
+            await loadReviewsToOpenSearch();
             // await loadAuthorsToOpenSearch();
             // await loadSalesByYearToOpenSearch();
             console.log('Data successfully loaded into OpenSearch');

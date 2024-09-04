@@ -16,6 +16,7 @@ router.get('/reviews', async (req, res) => {
       const reviewSearchResult = await openSearchClient.search({
         index: 'reviews',
         body: {
+          size: 10000,
           query: {
             match_all: {}
           }
@@ -46,12 +47,6 @@ router.get('/reviews', async (req, res) => {
         id: hit._source.id,
         name: hit._source.name
       }));
-
-      console.log("Sample book", books[0]);
-      console.log("Sample review", reviews[0]);
-      console.log(books[0].id);
-      console.log(books[0].name);
-      console.log(reviews[0].book);
 
       // Map book ids to reviews
       reviews.forEach(review => {
@@ -146,7 +141,14 @@ router.post('/reviews', async (req, res) => {
       });
     }
 
-    await redisClient.delAsync('reviews');
+    // Clear the reviews cache
+    await redisClient.del('reviews', (err, response) => {
+      if (err) {
+        console.error('Error clearing Redis cache:', err);
+      } else {
+        console.log('Redis cache cleared:', response);
+      }
+    });
 
     res.status(201).json({ message: 'Review added successfully' });
   } catch (error) {

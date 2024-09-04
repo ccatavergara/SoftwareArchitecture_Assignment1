@@ -149,7 +149,7 @@ router.put('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also update the book in OpenSearch
     if (openSearchClient) {
-      
+      console.log("OpenSearchClient aviable:", openSearchClient);
       await openSearchClient.update({
         index: 'books',
         id: id,
