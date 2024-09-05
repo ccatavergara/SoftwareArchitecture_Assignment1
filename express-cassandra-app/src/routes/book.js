@@ -9,7 +9,7 @@ const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
 const USE_PROXY = process.env.USE_PROXY === 'true';
-
+console.log('Using proxy:', USE_PROXY);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -27,7 +27,7 @@ const upload = multer({ storage });
 router.get('/books', async (req, res) => {
   try {
     // Search in OpenSearch if available
-    
+
     // Check if books are cached in Redis
     const cachedBooks = await redisClient.getAsync('books');
     if (cachedBooks) {
@@ -46,7 +46,10 @@ router.get('/books', async (req, res) => {
         book.cover_image_path = '/images/' + book.cover_image_path;
         console.log(book.cover_image_path);
       });
-  } 
+    }
+    else{
+      console.log('Proxy disabled')
+    }
     redisClient.setAsync('books', JSON.stringify(result.rows));
 
     res.json(result.rows);
@@ -162,7 +165,7 @@ router.delete('/books/:id', async (req, res) => {
 
     // If OpenSearch is aviable, also delete the book in OpenSearch
     if (openSearchClient) {
-      
+
       await openSearchClient.delete({
         index: 'books',
         id: id
